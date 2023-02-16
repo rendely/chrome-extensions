@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Base extension (make copy)",
+  "description": "Base Level Extension",
+  "version": "1.0",
+  "action": {
+    "default_icon": {
+      "32": "images/hello-32.png",
+      "48": "images/hello-48.png"
+    },
+    "default_popup": "popup.html",
+    "default_title": "Base Extension"
+  },
+  "icons": {
+    "32": "images/hello-32.png",
+    "48": "images/hello-48.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["tabs","bookmarks"]
+}
