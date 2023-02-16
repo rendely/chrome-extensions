@@ -4,6 +4,11 @@ function appendDiv(text, divId) {
   div.className = 'result';
   div.innerText = text;
   document.getElementById(divId).appendChild(div);
+
+  // delete the div when clicked
+  div.addEventListener('click', function() {
+    div.remove(); 
+});
 }
 
 //Get the current tab URL
@@ -33,5 +38,15 @@ function bookmarkExtraction(b, folder_name) {
   }
 }
 
+//Get all the sessions
+function getAllSessions(callback) {
+  chrome.sessions.getDevices({}, s => { 
+    s[0].sessions[0].window.tabs.forEach(tab => {
+      callback(tab.url, 'session-tab-list');
+    })
+  });
+}
+
 getAllBookmarks(bookmarkExtraction);
 getCurrentTabUrl(appendDiv);
+getAllSessions(appendDiv);
