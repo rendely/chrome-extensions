@@ -3,6 +3,7 @@ const bookmarks = [];
 const folders = [];
 getAllBookmarks(bookmarkExtraction);
 console.log(bookmarks);
+console.log(folders);
 
 // TODO: Add event listener to refetch bookmarks and folders if anything changes
 
@@ -19,7 +20,7 @@ function bookmarkExtraction(b, folderName) {
     bookmarks.push({...b, 
       "folderTree":folderName,});
   } else if (!!b.children) {
-    folders.push({...b})
+    if (b.id !== "0") folders.push({...b}); // don't push root folder
     const newFolderName = !!b.title ? `${folderName} > ${b.title}` : folderName;
     b.children.forEach(b => bookmarkExtraction(b, newFolderName));
   }
@@ -36,7 +37,7 @@ async function archiveFlatten(event){
   });
   //TODO should I delete and re-create? that messes up undo a lot. Maybe hide in a temp folder?
   folders.forEach(async function(f){
-    if (f.parentId == 1) await chrome.bookmarks.move(f.id, {"parentId": archiveFolderId});
+    if (f.parentId !== "0" && f.id !== archiveFolderId) await chrome.bookmarks.move(f.id, {"parentId": archiveFolderId});
   });
   console.log('Archive flatten');
   const el = event.target
@@ -51,7 +52,7 @@ function undoArchiveFlatten(event){
     await chrome.bookmarks.move(b.id, {"parentId": b.parentId});
   });
   folders.forEach(async function(f){
-    if (f.parentId == 1) await chrome.bookmarks.move(f.id, {"parentId": f.parentId, "index": f.index});
+    if (f.parentId !== "0") await chrome.bookmarks.move(f.id, {"parentId": f.parentId, "index": f.index});
   });
   console.log('Undo archive flatten');
   const el = event.target
