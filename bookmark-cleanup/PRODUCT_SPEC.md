@@ -10,13 +10,14 @@
 - [ ] A4: Sort by: recency, title, N/A for A1, A2
 - [ ] A5: Undo after archiving to return to the prior state
 
-### B: Organize bookmarks into folders
+### B: Organize bookmarks
 
 - [ ] B1: Move bookmarks not in a folder into existing folders
-- [ ] B2: Create N folders and organize bookmarks into those folders, one level of folders only
+- [ ] B2: Create N folders and organize bookmarks into those folders, top level of folders only
 - [ ] B3: Power B1, and B2 with OpenAI embeddings API
 - [ ] B4: User must be able to add their API key
 - [ ] B5: Undo after organizing to return to the prior state
+- [ ] B6: Create N folders and organize via clustering within any arbitrary subfolder
 
 ### C: Create Smart Bookmarks
 
@@ -36,7 +37,7 @@
   - Organize (create new folders)
   - Suggest bookmarks
 
-- Tapping either of the Archive buttons immediately performs the action and an "Undo" toast appears. The toast is available until the page is closed OR any further changes are made to the bookmarks (via a listener)
+- Tapping either of the Archive buttons immediately performs the action and the button changes to "Undo". The undo is available until the page is closed OR any further changes are made to the bookmarks (via a listener)
 - Tapping the Organize (use existing folders) will immediately move bookmarks to existing folders. Optionally: show a preview of where bookmarks were moved to?
 - TBD the other flows
 
@@ -49,8 +50,7 @@
   - Description of how to use extension
 - 3 sections stacked vertically
   - Section title
-  - Large action buttons with inline description of what they do
-  - Hidden toast for undo
+  - Large action buttons with description of what they do
   - Hidden div for previewing results
 
 ### bookmark_cleanup.js

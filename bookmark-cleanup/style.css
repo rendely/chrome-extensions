@@ -1,8 +1,8 @@
 body {
-  width: 600px;
-  margin:auto;
   background: darkslategrey;
   color: whitesmoke;
+  margin:auto;
+  width: 600px;
 }
 
 .header{
@@ -11,20 +11,30 @@ body {
 
 .section {
   background: darkcyan;
-  padding: 10px;
-  margin-top: 20px;
   border-radius: 20px;
-  /* filter: drop-shadow(1px 1y 10px gray); */
   box-shadow: 4px 4px 5px #363636;
+  margin-top: 20px;
+  padding: 20px;
+}
+
+.button-container{
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
 }
 
 button.action-button {
   background-color: bisque;
-  border: none;
-  font-size: 14px;
-  padding: 5px;
   border-radius: 5px;
-  margin: 5px;
+  border: none;
+  box-shadow: 4px 4px 5px #363636;
+  flex-grow: 1;
+  font-size: 14px;
+  font-weight: 600;
+  height: 60px;
+  margin-right: 20px;
+  text-align: center;
+  width: 100%;
 }
 
 button.action-button:hover {
@@ -32,5 +42,9 @@ button.action-button:hover {
 }
 
 button.action-button:active {
-  background-color: cyan;
+  background-color: darkred;
+}
+
+button.action-button-undo {
+  background-color: blueviolet;
 }
