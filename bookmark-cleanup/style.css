@@ -1,0 +1,36 @@
+body {
+  width: 600px;
+  margin:auto;
+  background: darkslategrey;
+  color: whitesmoke;
+}
+
+.header{
+  text-align: center;
+}
+
+.section {
+  background: darkcyan;
+  padding: 10px;
+  margin-top: 20px;
+  border-radius: 20px;
+  /* filter: drop-shadow(1px 1y 10px gray); */
+  box-shadow: 4px 4px 5px #363636;
+}
+
+button.action-button {
+  background-color: bisque;
+  border: none;
+  font-size: 14px;
+  padding: 5px;
+  border-radius: 5px;
+  margin: 5px;
+}
+
+button.action-button:hover {
+  background-color: darkorange;
+}
+
+button.action-button:active {
+  background-color: cyan;
+}
