@@ -63,7 +63,40 @@ function undoArchiveFlatten(event){
 }
 
 // Archive and keep folders
+let archiveKeepFoldersButton = document.getElementById('action-archive-keep-folders');
+archiveKeepFoldersButton.addEventListener("click", archiveKeepFolders);
 
+async function archiveKeepFolders(event){
+  const archiveFolderId = await getArchiveFolderId();
+  bookmarks.forEach(async function(b){
+    if (b.parentId == "1") await chrome.bookmarks.move(b.id, {"parentId": archiveFolderId});
+  });
+  //TODO should I delete and re-create? that messes up undo a lot. Maybe hide in a temp folder?
+  folders.forEach(async function(f){
+    if (f.parentId !== "0" && f.id !== archiveFolderId) await chrome.bookmarks.move(f.id, {"parentId": archiveFolderId});
+  });
+  console.log('Archive keep folders');
+  const el = event.target
+  el.innerText = "Undo Archive";
+  el.removeEventListener("click", archiveKeepFolders)
+  el.addEventListener("click", undoArchiveKeepFolders);
+  el.classList.add("action-button-undo");
+}
+
+function undoArchiveKeepFolders(event){
+  bookmarks.forEach(async function(b){
+    await chrome.bookmarks.move(b.id, {"parentId": b.parentId});
+  });
+  folders.forEach(async function(f){
+    if (f.parentId !== "0") await chrome.bookmarks.move(f.id, {"parentId": f.parentId, "index": f.index});
+  });
+  console.log('Undo archive keep folders');
+  const el = event.target
+  el.innerText = "Archive all (flatten)";
+  el.removeEventListener("click", undoArchiveKeepFolders)
+  el.addEventListener("click",  archiveKeepFolders);
+  el.classList.remove("action-button-undo");
+}
 
 // Ensure archive folder exists and get id
 async function getArchiveFolderId(){
