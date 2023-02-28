@@ -27,6 +27,7 @@ function bookmarkExtraction(b, folderName) {
 }
 
 // Archive and flatten to remove folders
+// TODO: also hide all folders in a DELETED FOLDERS folder? Makes undo difficult if we delete
 let archiveFlattenButton = document.getElementById('action-archive-flatten');
 archiveFlattenButton.addEventListener("click", archiveFlatten);
 
@@ -35,7 +36,6 @@ async function archiveFlatten(event){
   bookmarks.forEach(async function(b){
     await chrome.bookmarks.move(b.id, {"parentId": archiveFolderId});
   });
-  //TODO should I delete and re-create? that messes up undo a lot. Maybe hide in a temp folder?
   folders.forEach(async function(f){
     if (f.parentId !== "0" && f.id !== archiveFolderId) await chrome.bookmarks.move(f.id, {"parentId": archiveFolderId});
   });
@@ -63,6 +63,7 @@ function undoArchiveFlatten(event){
 }
 
 // Archive and keep folders
+
 let archiveKeepFoldersButton = document.getElementById('action-archive-keep-folders');
 archiveKeepFoldersButton.addEventListener("click", archiveKeepFolders);
 
@@ -71,7 +72,6 @@ async function archiveKeepFolders(event){
   bookmarks.forEach(async function(b){
     if (b.parentId == "1") await chrome.bookmarks.move(b.id, {"parentId": archiveFolderId});
   });
-  //TODO should I delete and re-create? that messes up undo a lot. Maybe hide in a temp folder?
   folders.forEach(async function(f){
     if (f.parentId !== "0" && f.id !== archiveFolderId) await chrome.bookmarks.move(f.id, {"parentId": archiveFolderId});
   });
@@ -108,4 +108,52 @@ async function getArchiveFolderId(){
   else{
     return r[0].id;
   }
+}
+
+// Sort the archive folder contents
+// TODO: sort within each folder as well
+
+let sortArchiveButton = document.getElementById('action-sort-archive');
+sortArchiveButton.addEventListener("click", sortArchive);
+
+async function sortArchive(event){
+  const archiveFolderId = await getArchiveFolderId();
+  const archiveFolderContentsRoot = await chrome.bookmarks.getSubTree(archiveFolderId);
+  //global so we can undo it if needed
+  archiveFolderContent = archiveFolderContentsRoot[0].children;  
+  const sortedFolders = archiveFolderContent.sort(function(a,b){
+    if (!!a.children && !b.children) return -1;
+    if (!a.children && !!b.children) return 1;
+    if (a.title < b.title) return -1;
+    if (a.title > b.title) return 1;
+    return 0;
+  });
+
+  for (let i=0; i< sortedFolders.length; i++){
+    await chrome.bookmarks.move(sortedFolders[i].id, {"index": i});
+  }
+
+  const el = event.target;
+  el.innerText = "Undo sort";
+  el.removeEventListener("click", sortArchive)
+  el.addEventListener("click",  undoSortArchive);
+  el.classList.add("action-button-undo");
+  chrome.tabs.create({
+    url: 'chrome://bookmarks/?id='+archiveFolderId,
+    selected: true,
+  });
+}
+
+//TODO: doesn't exactly work, some weird behavior
+async function undoSortArchive(event){
+  archiveFolderContent.forEach(async function(b){
+    await chrome.bookmarks.move(b.id, { "index": b.index});
+  });
+  console.log('Undo sort');
+  const el = event.target
+  el.innerText = "Sort archive folder";
+  el.removeEventListener("click", undoSortArchive)
+  el.addEventListener("click",  sortArchive);
+  el.classList.remove("action-button-undo");
+
 }
