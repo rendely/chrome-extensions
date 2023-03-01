@@ -2,11 +2,8 @@
 const bookmarks = [];
 const folders = [];
 getAllBookmarks(bookmarkExtraction);
-console.log(bookmarks);
-console.log(folders);
 
 // TODO: Add event listener to refetch bookmarks and folders if anything changes
-
 
 // Function to find all the bookmarks in the main root and use bookmarkExtraction as the callback
 function getAllBookmarks(callback) {
@@ -156,4 +153,80 @@ async function undoSortArchive(event){
   el.addEventListener("click",  sortArchive);
   el.classList.remove("action-button-undo");
 
+}
+
+const stop_words = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you',
+"you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 
+'him', 'his', 'himself', 'she', "she's", 'her', 'hers', 'herself', 'it', "it's", 'its', 
+'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom',
+'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been',
+'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the',
+'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for',
+'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after',
+'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under',
+'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 
+'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 
+'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can',
+'will', 'just', 'don', "don't", 'should', "should've", 'now', 'd', 'll', 'm', 'o', 
+'re', 've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't", 'didn', "didn't", 
+'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't", 'haven', "haven't", 'isn',
+"isn't", 'ma', 'mightn', "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', 
+"shan't", 'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 
+'wouldn', "wouldn't"];
+
+
+function clusterBookmarks(){
+  console.log('Cluster test');
+  const wordVectors = {};
+  bookmarks.forEach(function(b){
+    wordVectors[b.id] = getWordVector(b);
+  });
+  const bindex = 144;
+  console.log(wordVectors[bindex]);
+  const pairCosineScores = [];
+  for (const [key1, value1] of Object.entries(wordVectors)) {
+    for (const [key2, value2] of Object.entries(wordVectors)) {
+      const cosineSimilarity = calculateCosineSimilarity(value1, value2);
+      // if (key2 <= key1 && key1 != key2 && cosineSimilarity > 0.1) console.log(value1.title, '\n', value2.title, cosineSimilarity );
+      if (key1 == bindex && key1 != key2 && cosineSimilarity > 0) pairCosineScores.push({"id1": value1.id, "id2": value2.id,"title1": value1.title,  "title2": value2.title, "score": cosineSimilarity });
+
+    }
+  }
+  sortedPairCosineScores = pairCosineScores.sort(function(a,b){
+    if (a.score < b.score) return 1;
+    if (a.score > b.score) return -1;
+    return 0;
+  });
+  console.log(sortedPairCosineScores);
+}
+
+function calculateCosineSimilarity(wv1, wv2){
+  let sumProd = 0;
+  for (const [key, value] of Object.entries(wv1.wordList)) {
+    sumProd += value * (wv2.wordList[key] || 0); 
+  }
+  const cosineSimilarity = sumProd/(wv1.sqrtSumSquares * wv2.sqrtSumSquares);
+  return cosineSimilarity;
+  
+}
+
+function getWordVector(b){
+  const wordVector = {"id": b.id, "title": b.title, "wordList": {}, "sqrtSumSquares": 0};
+  const wordsAll = b.title.toLowerCase().split(new RegExp("[ |\.|-|-|!|?|\(|\)|\|]+"))
+  wordsAll.push(b.url.match(/\/\/(.*)\//)[1].split("."));
+  const wordsFiltered = wordsAll.filter(item => !stop_words.includes(item));
+  wordsFiltered.forEach(function(word){
+    if (wordVector.wordList[word]) {
+      wordVector.wordList[word] += 1;
+    }else{
+      wordVector.wordList[word] = 1;
+    }
+  });
+
+  let sumSquares = 0;
+  for (const [key, value] of Object.entries(wordVector.wordList)) {
+    sumSquares += value * value; 
+  }
+  wordVector.sqrtSumSquares = Math.sqrt(sumSquares);
+  return wordVector;
 }

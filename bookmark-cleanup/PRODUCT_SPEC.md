@@ -4,20 +4,21 @@
 
 ### A: Archive existing bookmarks
 
-- [ ] A1: Archive all bookmarks into a single "ARCHIVE" folder, disregard current folder structure
-- [ ] A2: Same as A1, but keep the folder structure
+- [x] A1: Archive all bookmarks into a single "ARCHIVE" folder, disregard current folder structure
+- [x] A2: Same as A1, but keep the folder structure
 - [ ] A3: Remove duplicates as option for A1, A2
-- [ ] A4: Sort by: recency, title, N/A for A1, A2
-- [ ] A5: Undo after archiving to return to the prior state
+- [x] A4: Sort by: title
+- [x] A5: Undo after archiving to return to the prior state
 
 ### B: Organize bookmarks
 
 - [ ] B1: Move bookmarks not in a folder into existing folders
 - [ ] B2: Create N folders and organize bookmarks into those folders, top level of folders only
-- [ ] B3: Power B1, and B2 with OpenAI embeddings API
+- [ ] B3: Power B1, and B2 with OpenAI embeddings API OR test out cosine similarity on title/url, perhaps fetch request and get text?
 - [ ] B4: User must be able to add their API key
 - [ ] B5: Undo after organizing to return to the prior state
 - [ ] B6: Create N folders and organize via clustering within any arbitrary subfolder
+- [ ] B7: Sort and dedupe within all folders individually
 
 ### C: Create Smart Bookmarks
 
@@ -54,3 +55,10 @@
   - Hidden div for previewing results
 
 ### bookmark_cleanup.js
+
+- Tried clustering on just title + URL but doesn't seem sufficient. Might need to pull in document.body via fetch
+- Cluster bookmarks with this? https://github.com/tensorflow/tfjs-models/tree/master/universal-sentence-encoder
+
+### manifest.json
+
+- Only keep the host_permissions in manifest if needed for clustering via fetch()
