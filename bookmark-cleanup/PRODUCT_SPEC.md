@@ -57,7 +57,9 @@
 ### bookmark_cleanup.js
 
 - Tried clustering on just title + URL but doesn't seem sufficient. Might need to pull in document.body via fetch
+- Fetch doing OK, probably need to finetune what text is passed in.
 - Cluster bookmarks with this? https://github.com/tensorflow/tfjs-models/tree/master/universal-sentence-encoder
+- Could also try embeddings from OpenAI
 
 ### manifest.json
 

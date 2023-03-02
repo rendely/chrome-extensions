@@ -172,23 +172,46 @@ const stop_words = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves',
 'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't", 'haven', "haven't", 'isn',
 "isn't", 'ma', 'mightn', "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', 
 "shan't", 'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 
-'wouldn', "wouldn't"];
+'wouldn', "wouldn't","www","com","org","io"];
 
 
-function clusterBookmarks(){
-  console.log('Cluster test');
+async function tryGetBodyText(url){
+  // TODO: handle failures, e.g. fetching a bookmarklet starting with javascript
+  if (!url.match('^http.*')){
+    return [];
+  }
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36'
+    }
+    });
+  const htmlString = await response.text();
+  const parser = new DOMParser();
+  const htmlDoc = parser.parseFromString(htmlString, 'text/html');
+  const bodyTextElements = htmlDoc.body.querySelectorAll('h1, h2, h3, p');
+  let bodyText = '';
+  bodyTextElements.forEach(el => {bodyText += el.textContent;});
+  const bodyTextArray = bodyText.toLowerCase().split(new RegExp("[ |\.|-|-|!|?|\(|\)|\||\n]+"));
+  const bodyTextArrayFiltered = bodyTextArray.filter(item => item.match('^[a-z|A-Z]{5,10}$'));
+  console.log(url,bodyTextArrayFiltered);
+  return bodyTextArrayFiltered;  
+}
+
+// tryGetBodyText('https://news.ycombinator.com/item?id=34950465');
+
+async function clusterBookmarks(bindex = 53){
   const wordVectors = {};
-  bookmarks.forEach(function(b){
-    wordVectors[b.id] = getWordVector(b);
-  });
-  const bindex = 144;
+    for (const b of bookmarks){
+    wordVectors[b.id] = await getWordVector(b);
+  };
+  
   console.log(wordVectors[bindex]);
   const pairCosineScores = [];
   for (const [key1, value1] of Object.entries(wordVectors)) {
     for (const [key2, value2] of Object.entries(wordVectors)) {
       const cosineSimilarity = calculateCosineSimilarity(value1, value2);
       // if (key2 <= key1 && key1 != key2 && cosineSimilarity > 0.1) console.log(value1.title, '\n', value2.title, cosineSimilarity );
-      if (key1 == bindex && key1 != key2 && cosineSimilarity > 0) pairCosineScores.push({"id1": value1.id, "id2": value2.id,"title1": value1.title,  "title2": value2.title, "score": cosineSimilarity });
+      if (key1 == bindex && key1 != key2) pairCosineScores.push({"id1": value1.id, "id2": value2.id,"title1": value1.title,  "title2": value2.title, "score": cosineSimilarity });
 
     }
   }
@@ -210,10 +233,14 @@ function calculateCosineSimilarity(wv1, wv2){
   
 }
 
-function getWordVector(b){
+async function getWordVector(b){
+  console.log(b.title, b.url);
   const wordVector = {"id": b.id, "title": b.title, "wordList": {}, "sqrtSumSquares": 0};
-  const wordsAll = b.title.toLowerCase().split(new RegExp("[ |\.|-|-|!|?|\(|\)|\|]+"))
-  wordsAll.push(b.url.match(/\/\/(.*)\//)[1].split("."));
+  const wordsAll = b.title.toLowerCase().split(new RegExp("[ |\.|-|-|!|?|\(|\)|\||']+"))
+  const urlMatch = b.url.match(/\/\/([^\/]+)\//);
+  if (urlMatch) wordsAll.push(...b.url.match(/\/\/([^\/]+)\//)[1].split("."));
+  const bodyWordsAll = await tryGetBodyText(b.url) || [];
+  wordsAll.push(...bodyWordsAll);
   const wordsFiltered = wordsAll.filter(item => !stop_words.includes(item));
   wordsFiltered.forEach(function(word){
     if (wordVector.wordList[word]) {
@@ -222,7 +249,7 @@ function getWordVector(b){
       wordVector.wordList[word] = 1;
     }
   });
-
+  console.log(wordVector.wordList);
   let sumSquares = 0;
   for (const [key, value] of Object.entries(wordVector.wordList)) {
     sumSquares += value * value; 
