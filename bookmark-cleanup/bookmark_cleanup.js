@@ -10,6 +10,7 @@ function getAllBookmarks(callback) {
   chrome.bookmarks.getTree(b => {    
     callback(b[0], "Bookmarks");
   });
+  
 }
 
 function bookmarkExtraction(b, folderName) {
@@ -22,6 +23,8 @@ function bookmarkExtraction(b, folderName) {
     b.children.forEach(b => bookmarkExtraction(b, newFolderName));
   }
 }
+
+
 
 // Archive and flatten to remove folders
 // TODO: also hide all folders in a DELETED FOLDERS folder? Makes undo difficult if we delete
@@ -203,9 +206,7 @@ async function tryGetBodyText(url){
     return [];
   }
   const result = await chrome.storage.local.get([url])
-  if (result[url] !== undefined){
-    return result[url];
-  }
+  if (result[url] !== undefined) return result[url];
   const response = await fetch(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36'
@@ -219,14 +220,13 @@ async function tryGetBodyText(url){
   bodyTextElements.forEach(el => {bodyText += el.textContent;});
   const bodyTextArray = bodyText.toLowerCase().split(new RegExp("[ |\.|-|-|!|?|\(|\)|\||\n]+"));
   const bodyTextArrayFiltered = bodyTextArray.filter(item => item.match('^[a-z|A-Z]{5,10}$'));
-  await chrome.storage.local.set({ [url]: bodyTextArrayFiltered });
+  await chrome.storage.local.set({ [url]: bodyTextArrayFiltered.splice(0,20) });
   return bodyTextArrayFiltered;  
 }
 
 // tryGetBodyText('https://news.ycombinator.com/item?id=34950465');
 
-async function clusterBookmarks(bIndex = 53){
-  console.log('clustering', bIndex)
+async function clusterBookmarks(bIndex = 23){
   const wordVectors = {};
     for (const b of bookmarks){
     wordVectors[b.id] = await getWordVector(b);
@@ -246,7 +246,50 @@ async function clusterBookmarks(bIndex = 53){
     if (a.score > b.score) return -1;
     return 0;
   });
-  // console.log(sortedPairCosineScores);
+  
+  
+  //simple grouping algorithm from highest to lowest, first match
+  let group_id = 0;
+  const bookmarksGrouped = {};
+  sortedPairCosineScores.forEach(e => {
+      
+    //neither in a group
+    if (!(e.id1 in bookmarksGrouped) && !(e.id2 in bookmarksGrouped)){
+      bookmarksGrouped[e.id1] = group_id;
+      bookmarksGrouped[e.id2] = group_id;
+      group_id++;
+      // console.log('neither in group', e.id1, e.id2);
+      // console.log(bookmarksGrouped);
+    }
+    //first already in a group
+    else if (e.id1 in bookmarksGrouped && !(e.id2 in bookmarksGrouped)){
+      bookmarksGrouped[e.id2] = bookmarksGrouped[e.id1];
+      // console.log('first was in group',  e.id1, e.id2);
+      // console.log(bookmarksGrouped);
+    }
+    //second already in a group
+    else if (!(e.id1 in bookmarksGrouped) && e.id2 in bookmarksGrouped){
+      bookmarksGrouped[e.id1] = bookmarksGrouped[e.id2];
+      // console.log('second was in group',  e.id1, e.id2);
+      // console.log(bookmarksGrouped);
+    }
+    //both already in group(s)
+    else if (e.id1 in bookmarksGrouped && e.id2 in bookmarksGrouped){
+      // console.log('both in group', e.id1, e.id2);
+    }
+  })
+
+ 
+  const bookmarkLookup = bookmarks.reduce((obj, item) => (obj[item.id] = {'title': item.title, 'url':item.url}, obj) ,{});
+  
+  const bookmarkRollup = {};
+  for (const [key, value] of Object.entries(bookmarksGrouped)) {
+    if (!(value in bookmarkRollup)) bookmarkRollup[value] = [];
+    bookmarkRollup[value].push(bookmarkLookup[key]['title'])    
+  }
+  
+  console.log(bookmarkRollup);
+
   sortedPairCosineScores.forEach(e => {
     showSimilarBookmarks(e,'matching-bookmarks');
   })
@@ -277,7 +320,7 @@ async function getWordVector(b){
       wordVector.wordList[word] = 1;
     }
   });
-
+  console.log(b.url, wordVector)
   let sumSquares = 0;
   for (const [key, value] of Object.entries(wordVector.wordList)) {
     sumSquares += value * value; 
