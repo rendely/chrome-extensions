@@ -14,8 +14,8 @@
 
 - [ ] B1: Move bookmarks not in a folder into existing folders
 - [ ] B2: Create N folders and organize bookmarks into those folders, top level of folders only
-- [ ] B3: Power B1, and B2 with OpenAI embeddings API OR test out cosine similarity on title/url, perhaps fetch request and get text?
-- [ ] B4: User must be able to add their API key
+- [X] B3: Power B1, and B2 with OpenAI embeddings API OR test out cosine similarity on title/url, perhaps fetch request and get text?
+- [ ] B4: User must be able to add their API key (if using OpenAI)
 - [ ] B5: Undo after organizing to return to the prior state
 - [ ] B6: Create N folders and organize via clustering within any arbitrary subfolder
 - [ ] B7: Sort and dedupe within all folders individually

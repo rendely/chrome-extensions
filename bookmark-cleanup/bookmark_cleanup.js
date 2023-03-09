@@ -175,10 +175,36 @@ const stop_words = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves',
 'wouldn', "wouldn't","www","com","org","io"];
 
 
+let organizeButton = document.getElementById('action-organize');
+organizeButton.addEventListener("click", clusterBookmarks.bind(null, 26));
+
+function showSimilarBookmarks(pair, divId){
+  targetDiv = document.getElementById(divId);
+  containerDiv = document.createElement('div');
+  el1 = document.createElement('div');
+  el1.textContent = pair.title1;
+  el2 = document.createElement('div');
+  el2.textContent = pair.title2;
+  el3 = document.createElement('div');
+  el3.textContent = Math.round(10000 * pair.score) / 10000; 
+  el1.className = 'matching-title';
+  el2.className = 'matching-title';
+  el3.className = 'matching-score';
+  containerDiv.className = 'matching-container'
+  containerDiv.appendChild(el1);
+  containerDiv.appendChild(el2);
+  containerDiv.appendChild(el3);
+  targetDiv.appendChild(containerDiv);
+}
+
 async function tryGetBodyText(url){
   // TODO: handle failures, e.g. fetching a bookmarklet starting with javascript
   if (!url.match('^http.*')){
     return [];
+  }
+  const result = await chrome.storage.local.get([url])
+  if (result[url] !== undefined){
+    return result[url];
   }
   const response = await fetch(url, {
     headers: {
@@ -193,25 +219,25 @@ async function tryGetBodyText(url){
   bodyTextElements.forEach(el => {bodyText += el.textContent;});
   const bodyTextArray = bodyText.toLowerCase().split(new RegExp("[ |\.|-|-|!|?|\(|\)|\||\n]+"));
   const bodyTextArrayFiltered = bodyTextArray.filter(item => item.match('^[a-z|A-Z]{5,10}$'));
-  console.log(url,bodyTextArrayFiltered);
+  await chrome.storage.local.set({ [url]: bodyTextArrayFiltered });
   return bodyTextArrayFiltered;  
 }
 
 // tryGetBodyText('https://news.ycombinator.com/item?id=34950465');
 
-async function clusterBookmarks(bindex = 53){
+async function clusterBookmarks(bIndex = 53){
+  console.log('clustering', bIndex)
   const wordVectors = {};
     for (const b of bookmarks){
     wordVectors[b.id] = await getWordVector(b);
   };
   
-  console.log(wordVectors[bindex]);
   const pairCosineScores = [];
   for (const [key1, value1] of Object.entries(wordVectors)) {
     for (const [key2, value2] of Object.entries(wordVectors)) {
       const cosineSimilarity = calculateCosineSimilarity(value1, value2);
-      // if (key2 <= key1 && key1 != key2 && cosineSimilarity > 0.1) console.log(value1.title, '\n', value2.title, cosineSimilarity );
-      if (key1 == bindex && key1 != key2) pairCosineScores.push({"id1": value1.id, "id2": value2.id,"title1": value1.title,  "title2": value2.title, "score": cosineSimilarity });
+      if (key2 <= key1 && key1 != key2 && cosineSimilarity > 0.0001) pairCosineScores.push({"id1": value1.id, "id2": value2.id,"title1": value1.title,  "title2": value2.title, "score": cosineSimilarity });
+      // if (key1 == bIndex && key1 != key2) pairCosineScores.push({"id1": value1.id, "id2": value2.id,"title1": value1.title,  "title2": value2.title, "score": cosineSimilarity });
 
     }
   }
@@ -220,7 +246,10 @@ async function clusterBookmarks(bindex = 53){
     if (a.score > b.score) return -1;
     return 0;
   });
-  console.log(sortedPairCosineScores);
+  // console.log(sortedPairCosineScores);
+  sortedPairCosineScores.forEach(e => {
+    showSimilarBookmarks(e,'matching-bookmarks');
+  })
 }
 
 function calculateCosineSimilarity(wv1, wv2){
@@ -234,7 +263,6 @@ function calculateCosineSimilarity(wv1, wv2){
 }
 
 async function getWordVector(b){
-  console.log(b.title, b.url);
   const wordVector = {"id": b.id, "title": b.title, "wordList": {}, "sqrtSumSquares": 0};
   const wordsAll = b.title.toLowerCase().split(new RegExp("[ |\.|-|-|!|?|\(|\)|\||']+"))
   const urlMatch = b.url.match(/\/\/([^\/]+)\//);
@@ -249,7 +277,7 @@ async function getWordVector(b){
       wordVector.wordList[word] = 1;
     }
   });
-  console.log(wordVector.wordList);
+
   let sumSquares = 0;
   for (const [key, value] of Object.entries(wordVector.wordList)) {
     sumSquares += value * value; 

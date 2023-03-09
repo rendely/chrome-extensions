@@ -2,7 +2,7 @@ body {
   background: darkslategrey;
   color: whitesmoke;
   margin:auto;
-  width: 600px;
+  width: 800px;
 }
 
 .header{
@@ -48,4 +48,22 @@ button.action-button:active {
 
 button.action-button-undo {
   background-color: blueviolet;
+}
+
+.matching-container{
+  display: flex;
+  flex-direction: row;
+  border-color: bisque;
+  border-radius: 5px;
+  border-style: solid;
+  margin: 10px;
+}
+.matching-title{
+  margin: 10px;
+  flex: 2 1 0;
+}
+
+.matching-score{
+  margin: 10px;
+  flex: 1 1 0;
 }

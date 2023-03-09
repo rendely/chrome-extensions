@@ -21,7 +21,8 @@
   },
   "permissions": [
     "bookmarks",
-    "history"
+    "history",
+    "storage"
   ],
   "host_permissions": ["<all_urls>"]
 }
