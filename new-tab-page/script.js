@@ -4,26 +4,35 @@ topNHistorySites = 20;
 historyTimeRange = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
 
 //Get the top sites and add them to the page
+//TODO: is there a cleaner way to write this?
 chrome.topSites.get()
-  .then(topSites => addSitesToSection(topSites,'topSites'))
+  .then(topSites => addSitesToSection(topSites, 'topSites'))
 
   //Then get sites from history, sort by most visited and add the top 20
   //to the page
-  .then(chrome.history.search({text: "", startTime: historyTimeRange})
-    .then(historicSites =>  {
-      historicSitesSorted = historicSites.sort((a,b) => {
+  .then(chrome.history.search({ text: "", startTime: historyTimeRange, maxResults: 200 })
+    .then(async historicSites => {
+      historicSitesSorted = historicSites.sort((a, b) => {
         if (a.visitCount > b.visitCount) return -1;
         if (a.visitCount < b.visitCount) return 1;
         return 0;
       });
-      addSitesToSection(historicSitesSorted.splice(0,topNHistorySites),'topSites');
+
+      const historicSitesFiltered = [];
+      for (s of historicSitesSorted){
+        const v = await chrome.history.getVisits({ url: s.url });
+        if (v.map(i => i.transition === 'typed').includes(true)) historicSitesFiltered.push(s);
+      }
+      
+      console.log(historicSitesFiltered);
+      addSitesToSection(historicSitesFiltered.splice(0, topNHistorySites), 'topSites');
     })
   );
 
 //Add site shortcuts to the page
-function addSitesToSection(topSites,sectionId){
+function addSitesToSection(topSites, sectionId) {
   const div = document.getElementById(sectionId);
-  for (site of topSites){
+  for (site of topSites) {
     const siteShortcut = document.createElement('div');
     siteShortcut.className = 'top-site';
     const link = document.createElement('a');
