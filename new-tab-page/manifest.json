@@ -3,12 +3,19 @@
   "name": "New tab page",
   "description": "Better version of the new tab page",
   "version": "1.0",
-  "chrome_url_overrides" : {
-    "newtab": "index.html"
+  "action": {
+    "default_icon": {
+      "32": "images/hello-32.png",
+      "48": "images/hello-48.png"
+    },
+    "default_title": "New tab page"
   },
   "icons": {
     "32": "images/hello-32.png",
     "48": "images/hello-48.png"
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "permissions": ["history", "topSites"]
 }

@@ -1,9 +1,7 @@
-// Run when extension loads
-chrome.runtime.onInstalled.addListener(function () {
-  console.log('Updating badge');
-  chrome.action.setBadgeText({"text": "Update"} );
-  //timeout function
-  setTimeout(function(){    
-    chrome.action.setBadgeText({"text": ""} );
-  }, 2000);
-});
+// Open the extension's page when the icon is clicked in the toolbar
+chrome.action.onClicked.addListener(function (tab) {
+  chrome.tabs.create({
+    url: 'index.html',
+    selected: true,
+  })
+})

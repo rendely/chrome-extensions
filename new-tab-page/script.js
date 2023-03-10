@@ -1,52 +1,24 @@
-//Append a div to the body of the popup
-function appendDiv(text, divId) {
-  var div = document.createElement('div');
-  div.className = 'result';
-  div.innerText = text;
-  document.getElementById(divId).appendChild(div);
+//Get the top sites and add them to the page
+chrome.topSites.get(showTopSites);
 
-  // delete the div when clicked
-  div.addEventListener('click', function() {
-    div.remove(); 
-});
-}
 
-//Get the current tab URL
-function getCurrentTabUrl(callback) {
-  //let queryOptions = { active: true, lastFocusedWindow: true};
-  let queryOptions = {}
-  chrome.tabs.query(queryOptions, tabs => {
-    tabs.forEach(tab =>
-      callback(tab.url, 'tab-list'));
-  });
-}
-
-//Get all the bookmarks
-function getAllBookmarks(callback) {
-  chrome.bookmarks.getTree(b => {
-    callback(b[0], "Bookmarks");
-  });
-}
-
-//Extract the bookmarks
-function bookmarkExtraction(b, folder_name) {
-  if (!b.children && !!b.title) {
-    appendDiv(`${folder_name} > ${b.title}`, 'bookmark-list');
-  } else if (!!b.children) {
-    new_folder_name = !!b.title ? `${folder_name} > ${b.title}` : folder_name;
-    b.children.forEach(b => bookmarkExtraction(b, new_folder_name));
+//Add them to the page
+function showTopSites(topSites){
+  console.log(topSites);
+  const div = document.getElementById('topSites');
+  for (site of topSites){
+    console.log(site);
+    console.log(site.url);
+    const siteShortcut = document.createElement('div');
+    const link = document.createElement('a');
+    link.href = site.url;
+    link.textContent = site.title;
+    siteShortcut.className = 'top-site';
+    // siteShortcut.textContent = site.title + ' - ' + site.url;
+    const favicon = document.createElement('img');
+    favicon.src = `https://www.google.com/s2/favicons?sz=64&domain=${site.url}`
+    siteShortcut.appendChild(favicon);
+    siteShortcut.appendChild(link);
+    div.appendChild(siteShortcut);
   }
 }
-
-//Get all the sessions
-function getAllSessions(callback) {
-  chrome.sessions.getDevices({}, s => { 
-    s[0].sessions[0].window.tabs.forEach(tab => {
-      callback(tab.url, 'session-tab-list');
-    })
-  });
-}
-
-getAllBookmarks(bookmarkExtraction);
-getCurrentTabUrl(appendDiv);
-getAllSessions(appendDiv);

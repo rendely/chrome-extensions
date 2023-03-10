@@ -1,3 +1,32 @@
 body {
   background-color: darkslategray;
 }
+
+#container{
+ max-width: 900px;
+ min-width: 600px;
+ margin: auto;
+}
+#topSites{
+  display:flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  /* align-content: space-around; */
+}
+.top-site{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 10px;
+  padding: 10px;
+  overflow:hidden;
+  width: 150px;
+  background-color: aliceblue;
+  text-align: center;
+  align-items: center;
+  border-radius: 10px;
+}
+
+.top-site img{
+  width: 40px;
+}
