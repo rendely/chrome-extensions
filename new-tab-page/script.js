@@ -9,8 +9,7 @@ historyTimeRange = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
     const topSites = await chrome.topSites.get();
     addSitesToSection(topSites, 'topSites');
 
-    //Then get sites from history, sort by most visited and add the top 20
-    //to the page
+    //Then get sites from history, sort by most visited and add the top 20 to the page
     const historicSites = await chrome.history.search(
       { text: "", startTime: historyTimeRange, maxResults: 500 });
 
@@ -25,17 +24,21 @@ historyTimeRange = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
     const historicSitesFiltered = [];
     for (s of historicSitesSortedByVisitCount) {
       const v = await chrome.history.getVisits({ url: s.url });
-      if (v.map(i => i.transition === 'typed').includes(true)) historicSitesFiltered.push(s);
+      //must be typed transition type
+      if (v.map(i => i.transition === 'typed').includes(true) &&
+      // remove if found in a topSite already
+      !topSites.some(t => s.url.match(t.url))) historicSitesFiltered.push(s);
     }
 
-    const historicSitesSortedByDomain = historicSitesFiltered.sort((a,b) => {
-      if (a.title > b.title) return -1;
-      if (a.title < b.title) return 1;
-      return 0;
-    });
+    //TODO: sort by frecency score
+    // const historicSitesSortedByDomain = historicSitesFiltered.sort((a,b) => {
+    //   if (a.title > b.title) return -1;
+    //   if (a.title < b.title) return 1;
+    //   return 0;
+    // });
 
     //Add history shortcuts to page
-    addSitesToSection(historicSitesSortedByDomain.splice(0, topNHistorySites), 'topSites');
+    addSitesToSection(historicSitesFiltered.splice(0, topNHistorySites), 'topSites');
 
   } catch (error) {
     console.error(error);
