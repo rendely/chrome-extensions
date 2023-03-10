@@ -5,8 +5,7 @@
   "version": "1.0",
   "action": {
     "default_icon": {
-      "32": "images/hello-32.png",
-      "48": "images/hello-48.png"
+      "48": "images/lotus_48.png"
     },
     "default_title": "New tab page"
   },
@@ -14,8 +13,7 @@
     "newtab": "index.html"
   },
   "icons": {
-    "32": "images/hello-32.png",
-    "48": "images/hello-48.png"
+      "48": "images/lotus_48.png"
   },
   "background": {
     "service_worker": "background.js"
