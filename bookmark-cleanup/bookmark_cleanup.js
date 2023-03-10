@@ -181,23 +181,18 @@ const stop_words = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves',
 let organizeButton = document.getElementById('action-organize');
 organizeButton.addEventListener("click", clusterBookmarks.bind(null, 26));
 
-function showSimilarBookmarks(pair, divId){
+function showSimilarBookmarks(title_list, divId){
   targetDiv = document.getElementById(divId);
   containerDiv = document.createElement('div');
-  el1 = document.createElement('div');
-  el1.textContent = pair.title1;
-  el2 = document.createElement('div');
-  el2.textContent = pair.title2;
-  el3 = document.createElement('div');
-  el3.textContent = Math.round(10000 * pair.score) / 10000; 
-  el1.className = 'matching-title';
-  el2.className = 'matching-title';
-  el3.className = 'matching-score';
-  containerDiv.className = 'matching-container'
-  containerDiv.appendChild(el1);
-  containerDiv.appendChild(el2);
-  containerDiv.appendChild(el3);
+  containerDiv.className = 'matching-container';
   targetDiv.appendChild(containerDiv);
+  for (const t in title_list){
+    el = document.createElement('div');
+    el.textContent = title_list[t];
+    el.className = 'matching-title';
+    containerDiv.appendChild(el);
+  }
+  
 }
 
 async function tryGetBodyText(url){
@@ -220,7 +215,7 @@ async function tryGetBodyText(url){
   bodyTextElements.forEach(el => {bodyText += el.textContent;});
   const bodyTextArray = bodyText.toLowerCase().split(new RegExp("[ |\.|-|-|!|?|\(|\)|\||\n]+"));
   const bodyTextArrayFiltered = bodyTextArray.filter(item => item.match('^[a-z|A-Z]{5,10}$'));
-  await chrome.storage.local.set({ [url]: bodyTextArrayFiltered.splice(0,20) });
+  await chrome.storage.local.set({ [url]: bodyTextArrayFiltered.splice(0,100) });
   return bodyTextArrayFiltered;  
 }
 
@@ -290,9 +285,9 @@ async function clusterBookmarks(bIndex = 23){
   
   console.log(bookmarkRollup);
 
-  sortedPairCosineScores.forEach(e => {
-    showSimilarBookmarks(e,'matching-bookmarks');
-  })
+  for (const [key, value] of Object.entries(bookmarkRollup)){
+    showSimilarBookmarks(value,'matching-bookmarks');
+  }
 }
 
 function calculateCosineSimilarity(wv1, wv2){
@@ -310,8 +305,10 @@ async function getWordVector(b){
   const wordsAll = b.title.toLowerCase().split(new RegExp("[ |\.|-|-|!|?|\(|\)|\||']+"))
   const urlMatch = b.url.match(/\/\/([^\/]+)\//);
   if (urlMatch) wordsAll.push(...b.url.match(/\/\/([^\/]+)\//)[1].split("."));
-  const bodyWordsAll = await tryGetBodyText(b.url) || [];
-  wordsAll.push(...bodyWordsAll);
+  // This seems to make the clustering worse so leaving commented out for now
+  // Look into again and make sure body text being pulled is useful
+  // const bodyWordsAll = await tryGetBodyText(b.url) || [];
+  // wordsAll.push(...bodyWordsAll);
   const wordsFiltered = wordsAll.filter(item => !stop_words.includes(item));
   wordsFiltered.forEach(function(word){
     if (wordVector.wordList[word]) {
