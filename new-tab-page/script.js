@@ -1,6 +1,6 @@
 //Define how far back in history to pull from for highly visited sites
 //And how many to show on the page
-topNHistorySites = 20;
+topNHistorySites = 25;
 historyTimeRange = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
 
 (async () => {
@@ -12,10 +12,10 @@ historyTimeRange = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
     //Then get sites from history, sort by most visited and add the top 20
     //to the page
     const historicSites = await chrome.history.search(
-      { text: "", startTime: historyTimeRange, maxResults: 200 });
+      { text: "", startTime: historyTimeRange, maxResults: 500 });
 
     //Sort by most visisted
-    historicSitesSorted = historicSites.sort((a, b) => {
+    const historicSitesSortedByVisitCount = historicSites.sort((a, b) => {
       if (a.visitCount > b.visitCount) return -1;
       if (a.visitCount < b.visitCount) return 1;
       return 0;
@@ -23,13 +23,19 @@ historyTimeRange = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
 
     //Filter to sites with a typed visit
     const historicSitesFiltered = [];
-    for (s of historicSitesSorted) {
+    for (s of historicSitesSortedByVisitCount) {
       const v = await chrome.history.getVisits({ url: s.url });
       if (v.map(i => i.transition === 'typed').includes(true)) historicSitesFiltered.push(s);
     }
 
+    const historicSitesSortedByDomain = historicSitesFiltered.sort((a,b) => {
+      if (a.title > b.title) return -1;
+      if (a.title < b.title) return 1;
+      return 0;
+    });
+
     //Add history shortcuts to page
-    addSitesToSection(historicSitesFiltered.splice(0, topNHistorySites), 'topSites');
+    addSitesToSection(historicSitesSortedByDomain.splice(0, topNHistorySites), 'topSites');
 
   } catch (error) {
     console.error(error);

@@ -10,6 +10,9 @@
     },
     "default_title": "New tab page"
   },
+  "chrome_url_overrides" : {
+    "newtab": "index.html"
+  },
   "icons": {
     "32": "images/hello-32.png",
     "48": "images/hello-48.png"
