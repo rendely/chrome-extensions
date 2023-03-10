@@ -3,31 +3,39 @@
 topNHistorySites = 20;
 historyTimeRange = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
 
-//Get the top sites and add them to the page
-//TODO: is there a cleaner way to write this?
-chrome.topSites.get()
-  .then(topSites => addSitesToSection(topSites, 'topSites'))
+(async () => {
+  try {
+    //Get the top sites and add them to the page
+    const topSites = await chrome.topSites.get();
+    addSitesToSection(topSites, 'topSites');
 
-  //Then get sites from history, sort by most visited and add the top 20
-  //to the page
-  .then(chrome.history.search({ text: "", startTime: historyTimeRange, maxResults: 200 })
-    .then(async historicSites => {
-      historicSitesSorted = historicSites.sort((a, b) => {
-        if (a.visitCount > b.visitCount) return -1;
-        if (a.visitCount < b.visitCount) return 1;
-        return 0;
-      });
+    //Then get sites from history, sort by most visited and add the top 20
+    //to the page
+    const historicSites = await chrome.history.search(
+      { text: "", startTime: historyTimeRange, maxResults: 200 });
 
-      const historicSitesFiltered = [];
-      for (s of historicSitesSorted){
-        const v = await chrome.history.getVisits({ url: s.url });
-        if (v.map(i => i.transition === 'typed').includes(true)) historicSitesFiltered.push(s);
-      }
-      
-      console.log(historicSitesFiltered);
-      addSitesToSection(historicSitesFiltered.splice(0, topNHistorySites), 'topSites');
-    })
-  );
+    //Sort by most visisted
+    historicSitesSorted = historicSites.sort((a, b) => {
+      if (a.visitCount > b.visitCount) return -1;
+      if (a.visitCount < b.visitCount) return 1;
+      return 0;
+    });
+
+    //Filter to sites with a typed visit
+    const historicSitesFiltered = [];
+    for (s of historicSitesSorted) {
+      const v = await chrome.history.getVisits({ url: s.url });
+      if (v.map(i => i.transition === 'typed').includes(true)) historicSitesFiltered.push(s);
+    }
+
+    //Add history shortcuts to page
+    addSitesToSection(historicSitesFiltered.splice(0, topNHistorySites), 'topSites');
+
+  } catch (error) {
+    console.error(error);
+  }
+})();
+
 
 //Add site shortcuts to the page
 function addSitesToSection(topSites, sectionId) {
@@ -39,9 +47,8 @@ function addSitesToSection(topSites, sectionId) {
     link.href = site.url;
     link.className = 'top-site-link';
     const title = document.createElement('span');
-    if (site.visitCount) title.textContent += `[${site.visitCount}] `
+    // if (site.visitCount) title.textContent += `[${site.visitCount}] `
     title.textContent += site.title;
-    // siteShortcut.textContent = site.title + ' - ' + site.url;
     const favicon = document.createElement('img');
     if (site.url.match('http')) favicon.src = `https://www.google.com/s2/favicons?sz=64&domain=${site.url}`
     div.appendChild(link);
