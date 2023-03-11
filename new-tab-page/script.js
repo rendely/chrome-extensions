@@ -1,6 +1,6 @@
 //Define how far back in history to pull from for highly visited sites
 //And how many to show on the page
-topNHistorySites = 45;
+topNHistorySites = 10;
 historyTimeRange = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
 
 (async () => {
@@ -27,8 +27,8 @@ historyTimeRange = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
     const historicSitesFiltered = [];
     for (s of historicSitesSortedByVisitCount) {
       const v = await chrome.history.getVisits({ url: s.url });
-      //must be typed transition type
-      if (v.map(i => i.transition === 'typed').includes(true) 
+      //must be typed or bookmark transition type
+      if (v.map(i => i.transition === 'typed' || i.transition==='auto_bookmark').includes(true) 
       // &&
       // remove if found in a topSite already
       // TODO: improve deduplication with some regex cleanup
@@ -46,6 +46,9 @@ historyTimeRange = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
     //Add history shortcuts to page
     addSitesToSection(historicSitesFiltered.splice(0, topNHistorySites), 'calcedTopSites');
 
+
+    //TODO: come up with contextually relevant shortcuts. e.g when you browse x 
+    //you also browse y and z
   } catch (error) {
     console.error(error);
   }
@@ -58,6 +61,7 @@ function addSitesToSection(topSites, sectionId) {
   for (site of topSites) {
     const siteShortcut = document.createElement('div');
     siteShortcut.className = 'top-site animate';
+    siteShortcut.style = `--y-dist: ${Math.random()*500+300}px`;
     const link = document.createElement('a');
     link.href = site.url;
     link.className = 'top-site-link';
