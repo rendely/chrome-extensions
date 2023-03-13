@@ -5,7 +5,10 @@ const topNHistorySites = 10;
 // const historyTimeRange = Date.now() - 24 * 60 * 60 * 1000; // 4 weeks
 const historyTimeRange = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
 const dedupe_time_range = (10 * 60 * 1000); // 10 mins
-
+//How much to increase weight for typed and bookmarked
+const transitionScoreMultiplier = 3;
+//Which transition types get the multipler
+const transitionScoreTypes = ["typed","auto_bookmark"]
 
 //First get the standard top sites and add them to the page
 chrome.topSites.get().then(topSites => {
@@ -56,23 +59,23 @@ async function calcAdvancedTopSites() {
     //Add history shortcuts to page
     // addSitesToSection(historicSitesFiltered.slice(0, topNHistorySites), 'calcedTopSites');
 
+    //Remove those already in top sites
+    const historicSitesDeduped = historicSites.filter(h => {
+      return (!topSitesCleanedUrls.includes(cleanUrl(h.url)));
+    })
 
     //Enrich history with visits data and clean URL for grouping
-    const historicSitesAll = await Promise.all(historicSites.map(async (h) => {
+    const historicSitesAll = await Promise.all(historicSitesDeduped.map(async (h) => {
       const visits = await chrome.history.getVisits({ url: h.url });
       const cleanedUrl = cleanUrl(h.url);
       return { ...h, visits, cleanedUrl };
     }));
 
-    //Remove those already in top sites
-    const historicSitesDeduped = historicSitesAll.filter(h =>{
-      return (!topSitesCleanedUrls.includes(h.cleanedUrl));
-    })
 
-        
+
     //Group on the cleaned URL 
     const historicSitesAllGrouped = [];
-    historicSitesDeduped.forEach((h, i) => {
+    historicSitesAll.forEach((h, i) => {
       const findIndex = historicSitesAllGrouped.findIndex(hf => {
         return (hf.cleanedUrl === h.cleanedUrl);
       });
@@ -83,7 +86,7 @@ async function calcAdvancedTopSites() {
         historicSitesAllGrouped.push(h);
       };
     });
-    
+
 
     //Round visit time for deduping
     historicSitesAllGrouped.forEach((h, i) => {
@@ -109,7 +112,10 @@ async function calcAdvancedTopSites() {
       });
 
       h.morningVisits = morningVisits
-      h.morningVisitCount = morningVisits.length;
+      // h.morningVisitCount = morningVisits.length;
+      h.morningVisitCount = morningVisits.reduce((tot_val, m)=> {
+        return tot_val + (transitionScoreTypes.includes(m.transition) ? transitionScoreMultiplier :1);
+      } ,0);
 
       //Calculate only evening visits
       eveningVisits = dedupedVisits.filter(v => {
@@ -119,11 +125,12 @@ async function calcAdvancedTopSites() {
       });
 
       h.eveningVisits = eveningVisits
-      h.eveningVisitCount = eveningVisits.length;
+      // h.eveningVisitCount = eveningVisits.length;
+      // Improved score by weighting typed and bookmark much higher
+      h.eveningVisitCount = eveningVisits.reduce((tot_val, m)=> {
+        return tot_val + (transitionScoreTypes.includes(m.transition) ? transitionScoreMultiplier :1);
+      } ,0);
 
-      //Calculate a score for sorting
-      //TODO: change this to a weighted formula: higher val for more recent (in particular last 5 minutes?), test favor typed over linked?
-      //TODO: score should be calculated after the same URL merge below
       h.score = h.dedupedVisits;
 
     })
@@ -135,7 +142,6 @@ async function calcAdvancedTopSites() {
       return 0;
     })
 
-    console.log(historicSitesAllGrouped.slice(0, 10));
 
     //TODO: different UI for same domain clusters?
     //Trim to the top results and order same domains together
@@ -150,6 +156,7 @@ async function calcAdvancedTopSites() {
       return 0;
     })
     addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites), 'topMorningSites');
+    console.log('morning:',historicSitesAllGrouped.slice(0, 10));
 
     //Add evening sites
     historicSitesAllGrouped.sort((a, b) => {
@@ -158,7 +165,7 @@ async function calcAdvancedTopSites() {
       return 0;
     })
     addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites), 'topEveningSites');
-
+    console.log('evening:',historicSitesAllGrouped.slice(0, 10));
 
     // //TODO: come up with contextually relevant shortcuts. e.g when you browse x 
     // //you also browse y and z
