@@ -157,8 +157,10 @@ async function calcAdvancedTopSites() {
 
     //Add morning sites
     historicSitesAllGrouped.sort((a, b) => {
-      if (a.morningVisitCount > b.morningVisitCount) return -1;
-      if (a.morningVisitCount < b.morningVisitCount) return 1;
+      aScore = a.morningVisitCount - a.eveningVisitCount;
+      bScore = b.morningVisitCount - b.eveningVisitCount;
+      if (aScore > bScore) return -1;
+      if (aScore < bScore) return 1;
       return 0;
     })
     addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites), 'topMorningSites');
@@ -166,8 +168,10 @@ async function calcAdvancedTopSites() {
 
     //Add evening sites
     historicSitesAllGrouped.sort((a, b) => {
-      if (a.eveningVisitCount > b.eveningVisitCount) return -1;
-      if (a.eveningVisitCount < b.eveningVisitCount) return 1;
+      aScore = a.eveningVisitCount - a.morningVisitCount;
+      bScore = b.eveningVisitCount - b.morningVisitCount;
+      if (aScore > bScore) return -1;
+      if (aScore < bScore) return 1;
       return 0;
     })
     addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites), 'topEveningSites');
@@ -187,7 +191,7 @@ function addSitesToSection(topSites, sectionId) {
   for (site of topSites) {
     const siteShortcut = document.createElement('div');
     siteShortcut.className = 'top-site animate';
-    siteShortcut.style = `--y-dist: ${Math.random() * 500 + 300}px`;
+    siteShortcut.style = `--y-dist: ${Math.random() * 100 + 200}px`;
     const link = document.createElement('a');
     link.href = site.url;
     link.className = 'top-site-link';
@@ -195,6 +199,7 @@ function addSitesToSection(topSites, sectionId) {
     // if (site.visitCount) title.textContent += `[${site.visitCount}] `
     title.textContent += cleanTitle(site.title);
     const favicon = document.createElement('img');
+    //TODO Fix broken for some sites: gmail.com
     if (site.url.match('http')) favicon.src = `https://www.google.com/s2/favicons?sz=64&domain=${site.url}`
     div.appendChild(link);
     link.appendChild(siteShortcut);
