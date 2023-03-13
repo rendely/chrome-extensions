@@ -1,4 +1,10 @@
+//TODO: write tests
 //TODO: Improve overall performance with local storage? incremental updates?
+//TODO: better scoring algo
+//TODO: change time based to be dynamic to current time
+//TODO: add different animation entrances to liven up
+//TODO: better background. also dynamic? 
+//TODO: add other widgets: contextual shortcuts, clock, 
 //Define how far back in history to pull from for highly visited sites
 //And how many to show on the page
 const topNHistorySites = 10;
@@ -18,7 +24,7 @@ const eveningHourStart = 12;
 
 //First get the standard top sites and add them to the page
 chrome.topSites.get().then(topSites => {
-  addSitesToSection(topSites, 'topSites');
+  addSitesToSection(topSites.sort(sortAscByKey("url")), 'topSites');
   topSitesCleanedUrls = topSites.map(t => cleanUrl(t.url));
   console.log(topSitesCleanedUrls);
 }, reason => console.error(reason))
@@ -120,6 +126,9 @@ async function calcAdvancedTopSites() {
       h.morningVisits = morningVisits
       // h.morningVisitCount = morningVisits.length;
       h.morningVisitCount = morningVisits.reduce((tot_val, m)=> {
+        //TODO generalize this scoring function and make it include date formula, use for evening as well
+        //TODO sigmoid function for hours close to current hour
+        //TODO other sigmoid for nearer vs further away dates 
         return tot_val + (transitionScoreTypes.includes(m.transition) ? transitionScoreMultiplier :1);
       } ,0);
 
@@ -163,7 +172,7 @@ async function calcAdvancedTopSites() {
       if (aScore < bScore) return 1;
       return 0;
     })
-    addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites), 'topMorningSites');
+    addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites).sort(sortAscByKey("cleanedUrl")), 'topMorningSites');
     console.log('morning:',historicSitesAllGrouped.slice(0, 10));
 
     //Add evening sites
@@ -174,7 +183,7 @@ async function calcAdvancedTopSites() {
       if (aScore < bScore) return 1;
       return 0;
     })
-    addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites), 'topEveningSites');
+    addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites).sort(sortAscByKey("cleanedUrl")), 'topEveningSites');
     console.log('evening:',historicSitesAllGrouped.slice(0, 10));
 
     // //TODO: come up with contextually relevant shortcuts. e.g when you browse x 
@@ -231,4 +240,12 @@ function cleanTitle(title) {
 
 function pprint(obj) {
   console.log(JSON.stringify(obj, null, 2));
+}
+
+function sortAscByKey(key){
+return function (a,b){
+  if (a[key] > b[key]) return 1
+  if (a[key] < b[key]) return -1
+  return 0;
+};
 }
