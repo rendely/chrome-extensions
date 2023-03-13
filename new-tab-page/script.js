@@ -9,6 +9,12 @@ const dedupe_time_range = (10 * 60 * 1000); // 10 mins
 const transitionScoreMultiplier = 3;
 //Which transition types get the multipler
 const transitionScoreTypes = ["typed","auto_bookmark"]
+//Consider morning starting at this hour
+const morningHourStart = 0;
+//Consider morning ending before this hour (exclusive)
+const morningHourEnd = 12;
+//Consider evening starting at this hour
+const eveningHourStart = 12;
 
 //First get the standard top sites and add them to the page
 chrome.topSites.get().then(topSites => {
@@ -108,7 +114,7 @@ async function calcAdvancedTopSites() {
       morningVisits = dedupedVisits.filter(v => {
         const t = new Date(v.visitTime);
         const hour = t.getHours();
-        return (hour < 12)
+        return (hour >= morningHourStart && hour < morningHourEnd)
       });
 
       h.morningVisits = morningVisits
@@ -121,7 +127,7 @@ async function calcAdvancedTopSites() {
       eveningVisits = dedupedVisits.filter(v => {
         const t = new Date(v.visitTime);
         const hour = t.getHours();
-        return (hour >= 12)
+        return (hour >= eveningHourStart)
       });
 
       h.eveningVisits = eveningVisits
