@@ -1,20 +1,26 @@
 //TODO: write tests
 //TODO: Improve overall performance with local storage? incremental updates?
-//TODO: better scoring algo
+//TODO: better scoring algo, and test how different parameters impact usefulness
+//TODO: dedupe so not showing multiple results for same domain?
 //TODO: change time based to be dynamic to current time
 //TODO: add different animation entrances to liven up
 //TODO: better background. also dynamic? 
 //TODO: add other widgets: contextual shortcuts, clock, 
+//TODO: come up with contextually relevant shortcuts. e.g when you browse x 
+//you also browse y and z
+
 //Define how far back in history to pull from for highly visited sites
 //And how many to show on the page
 const topNHistorySites = 10;
 // const historyTimeRange = Date.now() - 24 * 60 * 60 * 1000; // 4 weeks
-const historyTimeRange = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
+const historyTimeRange = Date.now() - 2 * 7 * 24 * 60 * 60 * 1000; // 4 weeks
 const dedupe_time_range = (10 * 60 * 1000); // 10 mins
+//Limit amount of history pulled, if starting to see any performance issues
+const maxHistoryResults = 0; //0 for no limit
 //How much to increase weight for typed and bookmarked
 const transitionScoreMultiplier = 3;
 //Which transition types get the multipler
-const transitionScoreTypes = ["typed","auto_bookmark"]
+const transitionScoreTypes = ["typed", "auto_bookmark"]
 //Consider morning starting at this hour
 const morningHourStart = 0;
 //Consider morning ending before this hour (exclusive)
@@ -34,42 +40,15 @@ chrome.topSites.get().then(topSites => {
 async function calcAdvancedTopSites() {
   try {
 
-    //Then get sites from history, sort by most visited and add the top 20 to the page
-    //TODO: can't rely on typedCount field, also should pull in bookmark clicks auto_bookmark
-    //TODO: will probably need linked type as well but with some filtering since sites
-    //like reddit create a lot of junk duplicates
+    //Get history
     let historicSites = await chrome.history.search(
-      { text: "", startTime: historyTimeRange, maxResults: 0 }); //use 0 to get all history
-
+      { text: "", startTime: historyTimeRange, maxResults: maxHistoryResults }); //use 0 to get all history
+    console.log('history fetched');
 
     //remove internal pages and non URL pages
     historicSites = historicSites.filter(h => {
       return (!h.url.match(/^chrome/) && h.url.match(/^http/))
     })
-
-    //Sort by most visisted
-    // typedCount value is actually incorrect a lot of the time so not relying on it
-    // const historicSitesSortedByVisitCount = historicSites.sort((a, b) => {
-    //   if (a.typedCount > b.typedCount) return -1;
-    //   if (a.typedCount < b.typedCount) return 1;
-    //   return 0;
-    // });
-
-    //Filter to sites with a typed visit
-    // const historicSitesFiltered = [];
-    // for (s of historicSitesSortedByVisitCount) {
-    //   const v = await chrome.history.getVisits({ url: s.url });
-    //   //must be typed or bookmark transition type
-    //   if (v.map(i => i.transition === 'typed' || i.transition === 'auto_bookmark').includes(true)
-    //     // &&
-    //     // remove if found in a topSite already
-    //     // TODO: improve deduplication with some regex cleanup
-    //     // !topSites.some(t => s.url.match(t.url))
-    //   ) historicSitesFiltered.push(s);
-    // }
-
-    //Add history shortcuts to page
-    // addSitesToSection(historicSitesFiltered.slice(0, topNHistorySites), 'calcedTopSites');
 
     //Remove those already in top sites
     const historicSitesDeduped = historicSites.filter(h => {
@@ -77,12 +56,13 @@ async function calcAdvancedTopSites() {
     })
 
     //Enrich history with visits data and clean URL for grouping
+    //Map is faster than a for of loop, want to learn why
     const historicSitesAll = await Promise.all(historicSitesDeduped.map(async (h) => {
       const visits = await chrome.history.getVisits({ url: h.url });
       const cleanedUrl = cleanUrl(h.url);
       return { ...h, visits, cleanedUrl };
     }));
-
+    console.log('visits fetched');
 
 
     //Group on the cleaned URL 
@@ -100,8 +80,10 @@ async function calcAdvancedTopSites() {
     });
 
 
-    //Round visit time for deduping
+    //Do several things for each URL grouped set of history
     historicSitesAllGrouped.forEach((h, i) => {
+
+      //First round the visit time 
       const visits = historicSitesAllGrouped[i].visits;
       visits.map(v => {
         v.visitTimeReadable = new Date(v.visitTime);
@@ -110,7 +92,7 @@ async function calcAdvancedTopSites() {
       });
       h.visits = visits;
 
-      //Dedupe the vists by time
+      //Dedupe the vists by that rounded time
       dedupedVisits = visits.filter((v, i) => {
         return (i === visits.findIndex(vf => vf.visitTime == v.visitTime));
       });
@@ -122,15 +104,13 @@ async function calcAdvancedTopSites() {
         const hour = t.getHours();
         return (hour >= morningHourStart && hour < morningHourEnd)
       });
-
       h.morningVisits = morningVisits
-      // h.morningVisitCount = morningVisits.length;
-      h.morningVisitCount = morningVisits.reduce((tot_val, m)=> {
+      h.morningVisitCount = morningVisits.reduce((tot_val, m) => {
         //TODO generalize this scoring function and make it include date formula, use for evening as well
         //TODO sigmoid function for hours close to current hour
         //TODO other sigmoid for nearer vs further away dates 
-        return tot_val + (transitionScoreTypes.includes(m.transition) ? transitionScoreMultiplier :1);
-      } ,0);
+        return tot_val + (transitionScoreTypes.includes(m.transition) ? transitionScoreMultiplier : 1);
+      }, 0);
 
       //Calculate only evening visits
       eveningVisits = dedupedVisits.filter(v => {
@@ -138,33 +118,16 @@ async function calcAdvancedTopSites() {
         const hour = t.getHours();
         return (hour >= eveningHourStart)
       });
-
       h.eveningVisits = eveningVisits
-      // h.eveningVisitCount = eveningVisits.length;
-      // Improved score by weighting typed and bookmark much higher
-      h.eveningVisitCount = eveningVisits.reduce((tot_val, m)=> {
-        return tot_val + (transitionScoreTypes.includes(m.transition) ? transitionScoreMultiplier :1);
-      } ,0);
-
+      h.eveningVisitCount = eveningVisits.reduce((tot_val, m) => {
+        return tot_val + (transitionScoreTypes.includes(m.transition) ? transitionScoreMultiplier : 1);
+      }, 0);
       h.score = h.dedupedVisits;
 
     })
+    console.log('scores calculated');
 
-    //Sort by score
-    historicSitesAllGrouped.sort((a, b) => {
-      if (a.score > b.score) return -1;
-      if (a.score < b.score) return 1;
-      return 0;
-    })
-
-
-    //TODO: different UI for same domain clusters?
-    //Trim to the top results and order same domains together
-
-    //Add to new section
-    // addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites), 'betterCalcedTopSites');
-
-    //Add morning sites
+    //Sort for morning score and add to DOM
     historicSitesAllGrouped.sort((a, b) => {
       aScore = a.morningVisitCount - a.eveningVisitCount;
       bScore = b.morningVisitCount - b.eveningVisitCount;
@@ -173,9 +136,9 @@ async function calcAdvancedTopSites() {
       return 0;
     })
     addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites).sort(sortAscByKey("cleanedUrl")), 'topMorningSites');
-    console.log('morning:',historicSitesAllGrouped.slice(0, 10));
+    console.table('morning:', historicSitesAllGrouped.slice(0, 10));
 
-    //Add evening sites
+    //Sort for evening score and add to DOM
     historicSitesAllGrouped.sort((a, b) => {
       aScore = a.eveningVisitCount - a.morningVisitCount;
       bScore = b.eveningVisitCount - b.morningVisitCount;
@@ -184,17 +147,16 @@ async function calcAdvancedTopSites() {
       return 0;
     })
     addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites).sort(sortAscByKey("cleanedUrl")), 'topEveningSites');
-    console.log('evening:',historicSitesAllGrouped.slice(0, 10));
+    console.log('evening:', historicSitesAllGrouped.slice(0, 10));
 
-    // //TODO: come up with contextually relevant shortcuts. e.g when you browse x 
-    // //you also browse y and z
+    
   } catch (error) {
     console.error(error);
   }
 };
 
 
-//Add site shortcuts to the page
+//Function to add site shortcuts to the DOM
 function addSitesToSection(topSites, sectionId) {
   const div = document.getElementById(sectionId);
   for (site of topSites) {
@@ -205,17 +167,18 @@ function addSitesToSection(topSites, sectionId) {
     link.href = site.url;
     link.className = 'top-site-link';
     const title = document.createElement('span');
-    // if (site.visitCount) title.textContent += `[${site.visitCount}] `
     title.textContent += cleanTitle(site.title);
     const favicon = document.createElement('img');
-    //TODO Fix broken for some sites: gmail.com
-    if (site.url.match('http')) favicon.src = `https://www.google.com/s2/favicons?sz=64&domain=${site.url}`
+    // favicon.src = `https://www.google.com/s2/favicons?sz=64&domain=${site.url}`
+    favicon.src = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURI(site.url)}&size=64`;
     div.appendChild(link);
     link.appendChild(siteShortcut);
     siteShortcut.appendChild(favicon);
     siteShortcut.appendChild(title);
   }
 }
+
+/* HELPER FUNCTIONS */
 
 function cleanUrl(url) {
   //lower case and trim
@@ -236,16 +199,14 @@ function cleanTitle(title) {
   return cleanedTitle;
 }
 
-
-
 function pprint(obj) {
   console.log(JSON.stringify(obj, null, 2));
 }
 
-function sortAscByKey(key){
-return function (a,b){
-  if (a[key] > b[key]) return 1
-  if (a[key] < b[key]) return -1
-  return 0;
-};
+function sortAscByKey(key) {
+  return function (a, b) {
+    if (a[key] > b[key]) return 1
+    if (a[key] < b[key]) return -1
+    return 0;
+  };
 }
