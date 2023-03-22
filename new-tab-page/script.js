@@ -27,6 +27,9 @@ const morningHourStart = 0;
 const morningHourEnd = 12;
 //Consider evening starting at this hour
 const eveningHourStart = 12;
+//Sigmoid constant
+//3 goes to 5% at 22 days. 2 goes to 5% at 15 days. 1 goes to 5% at 7 days
+const SIGMOID = 2; 
 
 //First get the standard top sites and add them to the page
 chrome.topSites.get().then(topSites => {
@@ -45,9 +48,9 @@ async function calcAdvancedTopSites() {
       { text: "", startTime: historyTimeRange, maxResults: maxHistoryResults }); //use 0 to get all history
     console.log('history fetched');
 
-    //remove internal pages and non URL pages
+    //remove internal pages, localhost and non URL pages
     historicSites = historicSites.filter(h => {
-      return (!h.url.match(/^chrome/) && h.url.match(/^http/))
+      return (!h.url.match(/^chrome/) && !h.url.match(/localhost/) && h.url.match(/^http/))
     })
 
     //Remove those already in top sites
@@ -99,30 +102,38 @@ async function calcAdvancedTopSites() {
       h.dedupedVisits = dedupedVisits;
 
       //Calculate only morning visits
-      morningVisits = dedupedVisits.filter(v => {
+      const morningVisits = dedupedVisits.filter(v => {
         const t = new Date(v.visitTime);
         const hour = t.getHours();
         return (hour >= morningHourStart && hour < morningHourEnd)
       });
       h.morningVisits = morningVisits
       h.morningVisitCount = morningVisits.reduce((tot_val, m) => {
-        //TODO generalize this scoring function and make it include date formula, use for evening as well
-        //TODO sigmoid function for hours close to current hour
-        //TODO other sigmoid for nearer vs further away dates 
-        return tot_val + (transitionScoreTypes.includes(m.transition) ? transitionScoreMultiplier : 1);
+        return tot_val + (transitionScoreTypes.includes(m.transition) ? transitionScoreMultiplier : 1) * sigmoidTimeScore(m.visitTime);
       }, 0);
 
       //Calculate only evening visits
-      eveningVisits = dedupedVisits.filter(v => {
+      const eveningVisits = dedupedVisits.filter(v => {
         const t = new Date(v.visitTime);
         const hour = t.getHours();
         return (hour >= eveningHourStart)
       });
       h.eveningVisits = eveningVisits
       h.eveningVisitCount = eveningVisits.reduce((tot_val, m) => {
-        return tot_val + (transitionScoreTypes.includes(m.transition) ? transitionScoreMultiplier : 1);
+        return tot_val + (transitionScoreTypes.includes(m.transition) ? transitionScoreMultiplier : 1) * sigmoidTimeScore(m.visitTime);
       }, 0);
-      h.score = h.dedupedVisits;
+
+       //Calculate similar hour of day visits
+       const currentTimeVisits = dedupedVisits.filter(v => {
+        const hourNow = (new Date(Date.now())).getHours();
+        const t = new Date(v.visitTime);
+        const hour = t.getHours();
+        return (hour >= hourNow -2 && hour <= hourNow +2)
+      });
+      h.currentTimeVisits = currentTimeVisits;
+      h.currentTimeVisitCount = currentTimeVisits.reduce((tot_val, m) => {
+        return tot_val + (transitionScoreTypes.includes(m.transition) ? transitionScoreMultiplier : 1) * sigmoidTimeScore(m.visitTime);
+      }, 0);
 
     })
     console.log('scores calculated');
@@ -149,6 +160,17 @@ async function calcAdvancedTopSites() {
     addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites).sort(sortAscByKey("cleanedUrl")), 'topEveningSites');
     console.log('evening:', historicSitesAllGrouped.slice(0, 10));
 
+    //Sort for similar to now hour and add to DOM
+    historicSitesAllGrouped.sort((a, b) => {
+      aScore = a.currentTimeVisitCount;
+      bScore = b.currentTimeVisitCount;
+      if (aScore > bScore) return -1;
+      if (aScore < bScore) return 1;
+      return 0;
+    })
+    addSitesToSection(historicSitesAllGrouped.slice(0, topNHistorySites).sort(sortAscByKey("cleanedUrl")), 'topThisTime');
+    console.log('thisTimeOfDay:', historicSitesAllGrouped.slice(0, 10));
+
     
   } catch (error) {
     console.error(error);
@@ -167,7 +189,7 @@ function addSitesToSection(topSites, sectionId) {
     link.href = site.url;
     link.className = 'top-site-link';
     const title = document.createElement('span');
-    title.textContent += cleanTitle(site.title);
+    title.textContent = cleanTitle(site.title);
     const favicon = document.createElement('img');
     // favicon.src = `https://www.google.com/s2/favicons?sz=64&domain=${site.url}`
     favicon.src = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURI(site.url)}&size=64`;
@@ -195,7 +217,9 @@ function cleanTitle(title) {
   // remove parentheses patterns like (3)
   let cleanedTitle = title.replace(/\([^\)]*\)/, "");
   // Only keep section before dash or semicolon
-  cleanedTitle = cleanedTitle.split(/\-|–|:/)[0];
+  cleanedTitle = cleanedTitle.split(/\-|\–|:/)[0];
+  // change period to space
+  cleanedTitle = cleanedTitle.replace(/(\w)(\.)(\w)/, "$1 $3");
   return cleanedTitle;
 }
 
@@ -209,4 +233,11 @@ function sortAscByKey(key) {
     if (a[key] < b[key]) return -1
     return 0;
   };
+}
+
+function sigmoidTimeScore(epochTime){
+  const timeNow = Date.now();
+  const days = (timeNow - epochTime) / 1000 / 60 / 60 /24;
+  const sigmoidVal = 1/(1+Math.exp(-(4.5-Math.abs(days/SIGMOID))));
+  return sigmoidVal
 }
