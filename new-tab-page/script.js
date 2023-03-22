@@ -1,12 +1,10 @@
 //TODO: write tests
 //TODO: Improve overall performance with local storage? incremental updates?
-//TODO: better scoring algo, and test how different parameters impact usefulness
 //TODO: dedupe so not showing multiple results for same domain?
-//TODO: change time based to be dynamic to current time
 //TODO: add different animation entrances to liven up
 //TODO: better background. also dynamic? 
-//TODO: add other widgets: contextual shortcuts, clock, 
 //TODO: come up with contextually relevant shortcuts. e.g when you browse x 
+//TODO: add other widgets like clock, 
 //you also browse y and z
 
 //Define how far back in history to pull from for highly visited sites
@@ -29,7 +27,7 @@ const morningHourEnd = 12;
 const eveningHourStart = 12;
 //Sigmoid constant
 //3 goes to 5% at 22 days. 2 goes to 5% at 15 days. 1 goes to 5% at 7 days
-const SIGMOID = 2; 
+const SIGMOID = 3; 
 
 //First get the standard top sites and add them to the page
 chrome.topSites.get().then(topSites => {
