@@ -1,3 +1,6 @@
+//TODO: User settings to manually hide sites (and reset that eventually)
+//TODO: User setting to pick different theme 
+//TODO: User setting to control params 
 //TODO: write tests
 //TODO: Improve overall performance with local storage? incremental updates?
 //TODO: dedupe so not showing multiple results for same domain?
