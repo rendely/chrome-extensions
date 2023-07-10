@@ -51,3 +51,6 @@ function searchCompanies(list, results) {
   })
   console.table(finalMatches);
 }
+
+// cleanResults = results.filter((r, i) => i === results.findIndex(r2 => r2.fullName === r.fullName))
+
