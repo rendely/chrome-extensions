@@ -1,32 +1,41 @@
-let isShift = false;
 
-document.addEventListener('keydown', setShift);
-document.addEventListener('keyup', unSetShift);
 document.addEventListener('keydown', videoControls);
 
-function setShift(e){
-  if (e.key == 'Shift') isShift = true
-}
-function unSetShift(e){
-  if (e.key == 'Shift') isShift = false
-}
-
-function videoControls(e){
+function videoControls(e) {
   e.stopImmediatePropagation();
-  let skip = document.querySelector("#skip-button\\:5 > span > button");
+  if (document.URL.match('netflix.com|openai.com')) return;
+  let skip = document.querySelector("[id*='skip-button'] > span > button");
   if (skip) skip.click();
   let videos = document.querySelectorAll('video');
-  let v = Array.from(videos).filter(vid => vid.duration > 0 && vid.checkVisibility())[0];
-  if (e.key == 'ArrowRight') targetTime = v.currentTime + (isShift ? 300 : 30);
-  if (e.key == 'ArrowLeft') targetTime = v.currentTime - (isShift ? 300 : 30);
+  let v = Array.from(videos).filter(vid => vid.duration > 0 && vid.checkVisibility());
+  v = v.sort((a, b) => b.duration - a.duration)[0];
+  if (e.code == 'KeyE') targetTime = v.currentTime + (e.shiftKey ? 300 : 30);
+  if (e.code == 'KeyW') targetTime = v.currentTime - (e.shiftKey ? 300 : 30);
+  if (e.code == 'KeyR') removeScrims();
+  if (e.code == 'KeyW' || e.code == 'KeyE') {
 
-  if (e.key =='ArrowRight' || e.key == 'ArrowLeft'){
-
-    window.setTimeout(() =>{
+    window.setTimeout(() => {
+      console.log('seeked');
       v.currentTime = targetTime;
-      console.log('skipped');
     }
-    , 500);
-  } 
-  
+      , 300);
+  }
+
+}
+
+function removeScrims() {
+  console.log('removing scrims')
+  // get all elements on the page
+  let allElements = document.querySelectorAll('*');
+
+  allElements.forEach(function (element) {
+    // get the computed style of each element
+    let style = window.getComputedStyle(element);
+
+    // check if the background-image property contains a linear-gradient
+    if (style.backgroundImage.includes('linear-gradient')) {
+      element.remove();
+    }
+  });
+  document.querySelector('.FliptrayWrapper').classList.remove('FliptrayWrapper');
 }
