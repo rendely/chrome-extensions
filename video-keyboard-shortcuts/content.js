@@ -3,7 +3,10 @@ document.addEventListener('keydown', videoControls);
 
 function videoControls(e) {
   e.stopImmediatePropagation();
-  if (document.URL.match('netflix.com|openai.com|render.com')) return;
+  if (!document.URL.match('youtube.com')) return;
+
+  let skip = document.querySelector("[id*='skip-button'] > span > button");
+  if (skip) {skip.click(); return;}
 
   let videos = document.querySelectorAll('video');
   let v = Array.from(videos).filter(vid => vid.duration > 0 && vid.checkVisibility());
@@ -14,9 +17,6 @@ function videoControls(e) {
   if (e.code === 'KeyW') targetTime = v.currentTime - (e.shiftKey ? 300 : 30);
   if (e.code === 'KeyR') removeScrims();
   if (e.code === 'KeyW' || e.code == 'KeyE') {
-
-    let skip = document.querySelector("[id*='skip-button'] > span > button");
-    if (skip) skip.click();
 
     window.setTimeout(() => {
       console.log('seeked');
