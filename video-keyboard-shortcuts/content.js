@@ -3,7 +3,7 @@ document.addEventListener('keydown', videoControls);
 
 function videoControls(e) {
   e.stopImmediatePropagation();
-  if (!document.URL.match('youtube.com')) return;
+  if (!document.URL.match('youtube.com|amazon.com|twitch.tv')) return;
 
   let skip = document.querySelector("[id*='skip-button'] > span > button");
   if (skip) {skip.click(); return;}
