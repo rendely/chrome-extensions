@@ -1,45 +1,76 @@
+if (document.URL.match('youtube.com|amazon.com/gp/video')) {
 
-document.addEventListener('keydown', videoControls);
+  document.addEventListener('keydown', videoControls);
+
+  document.addEventListener('DOMContentLoaded', (event) => {
+    const targetNode = document.body;
+    if (targetNode && document.URL.match('youtube.com')) {
+      observer.observe(targetNode, { childList: true, subtree: true });
+    }
+  });
+
+}
 
 function videoControls(e) {
   e.stopImmediatePropagation();
-  if (!document.URL.match('youtube.com|amazon.com|twitch.tv')) return;
 
-  let skip = document.querySelector("[id*='skip-button'] > span > button");
-  if (skip) {skip.click(); return;}
 
-  let videos = document.querySelectorAll('video');
-  let v = Array.from(videos).filter(vid => vid.duration > 0 && vid.checkVisibility());
-  v = v.sort((a, b) => b.duration - a.duration)[0];
-  if (v.length === 0) return;
+  adjustVideoTime(e);
+  // clickSkipButtons();
+}
 
-  if (e.code === 'KeyE') targetTime = v.currentTime + (e.shiftKey ? 300 : 30);
-  if (e.code === 'KeyW') targetTime = v.currentTime - (e.shiftKey ? 300 : 30);
-  if (e.code === 'KeyR') removeScrims();
-  if (e.code === 'KeyW' || e.code == 'KeyE') {
+function clickSkipButtons(skipButtons) {
+  console.log('Skip button');
+  console.log(skipButtons);
+  setTimeout(() => {
+    skipButtons.forEach(button => button.click());
+  }, 1000)
+}
 
-    window.setTimeout(() => {
-      console.log('seeked');
-      v.currentTime = targetTime;
-    }
-      , 300);
+function adjustVideoTime(e) {
+
+  const videos = Array.from(document.querySelectorAll('video'))
+    .filter(vid => vid.duration > 0 && vid.checkVisibility());
+
+  if (!videos.length) return;
+
+  const mainVideo = videos.sort((a, b) => b.duration - a.duration)[0];
+  let targetTime = mainVideo.currentTime;
+
+  if (e.code === 'KeyE') targetTime += e.shiftKey ? 300 : 30;
+  if (e.code === 'KeyW') targetTime -= e.shiftKey ? 300 : 30;
+
+  if (['KeyE', 'KeyW'].includes(e.code)) {
+    setTimeout(() => mainVideo.currentTime = targetTime, 300);
   }
 
+  if (e.code === 'KeyR') removeScrims();
 }
 
 function removeScrims() {
-  console.log('removing scrims')
-  // get all elements on the page
-  let allElements = document.querySelectorAll('*');
-
-  allElements.forEach(function (element) {
-    // get the computed style of each element
-    let style = window.getComputedStyle(element);
-
-    // check if the background-image property contains a linear-gradient
-    if (style.backgroundImage.includes('linear-gradient')) {
-      element.remove();
+  document.querySelectorAll('*').forEach(el => {
+    console.log('remove scrim');
+    if (window.getComputedStyle(el).backgroundImage.includes('linear-gradient')) {
+      el.remove();
     }
   });
-  document.querySelector('.FliptrayWrapper').classList.remove('FliptrayWrapper');
 }
+
+const observer = new MutationObserver(mutations => {
+  mutations.forEach(mutation => {
+    mutation.addedNodes.forEach(node => {
+
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const skipButtons = document.querySelectorAll("[id*='skip-button'] > span > button, [class*='skip' i],#ad-text");
+        if (skipButtons.length > 0) clickSkipButtons(skipButtons);
+        if (node.nodeName === 'VIDEO') {
+          console.log(node);
+          console.log(node.duration);
+          // clickSkipButtons();
+        }
+      }
+    });
+  });
+});
+
+
