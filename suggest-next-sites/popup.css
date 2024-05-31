@@ -1,0 +1,18 @@
+body {
+  width: 400px;
+}
+
+h1 {
+  margin: 10px;
+  padding: 5px;
+}
+
+.result {
+  margin: 10px;
+  padding: 5px;
+  background-color: lightblue;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
+  overflow:hidden;
+}
