@@ -1,18 +1,24 @@
+currentTabId = undefined;
+
 chrome.tabs.query({active: true, currentWindow: true},
     tabs => updateCurrent(tabs[0])
 );
 
-chrome.tabs.onActivated.addListener(refreshSuggest)
+chrome.tabs.onActivated.addListener(info => refreshSuggest(info.tabId))
+
+chrome.tabs.onUpdated.addListener((tabId, info) => {
+    if (tabId === currentTabId) refreshSuggest(tabId) });
 
 getAllHistory();
 
-async function refreshSuggest(info){
-    const tabId = info.tabId;
+async function refreshSuggest(tabId){
+    currentTabId = tabId;
     const tab = await chrome.tabs.get(tabId);
     updateCurrent(tab);
 }
 
 function updateCurrent(tab){
+    currentTabId = tab.id;
     const current = document.getElementById('current');
     current.href = tab.url;
     current.innerText = tab.title;
