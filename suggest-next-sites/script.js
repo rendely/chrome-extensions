@@ -25,19 +25,19 @@ function updateCurrent(tab){
 }
 
 async function getAllHistory(){
-    const all_history = await chrome.history.search(
+    const allHistory = await chrome.history.search(
         {text: "", maxResults: 10000, startTime: 0});
-    showSites(all_history.slice(0,10));
+    showSites(allHistory.slice(0,10));
 }
 
 function showSites(sites){
-    const sites_list = document.getElementById('sites');
+    const sitesList = document.getElementById('sites');
     sites.forEach(s => {
         const li = document.createElement('li');
         const a = document.createElement('a');
         a.href = s.href;
         a.innerText = s.title;
         li.appendChild(a);
-        sites_list.appendChild(li)
+        sitesList.appendChild(li)
     })
 }
