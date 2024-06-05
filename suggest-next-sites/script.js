@@ -54,11 +54,17 @@ async function getSuggested() {
             } else {
                 nextCount[nextUrl] = 1
             }
+            const nextNextUrl = sortedVisits[i + 1].url
+            if (nextCount[nextNextUrl]) {
+                nextCount[nextNextUrl]++
+            } else {
+                nextCount[nextNextUrl] = 1
+            }
         }
     }
     const sortedNext = Object.entries(nextCount).sort((a,b) => b[1] - a[1]);
     const results = sortedNext.map(s => s[0]);
-    showSites(results.slice(0, 10));
+    showSites(results.slice(0, 20));
 }
 
 function showSites(sites) {
