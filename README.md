@@ -10,3 +10,4 @@ Collection of Chrome Extensions
 
 * **Ollama:** Use a local GenAI model in a Chrome extension, for example to summarize a web page
 
+* **Video Keyboard Shortcuts:** Skip forward/back 30 seconds or jump to section similar to Youtube keyboard shortcuts but for any site playing a video
