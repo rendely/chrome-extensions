@@ -5,7 +5,7 @@ function fetchCode(prompt) {
         'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-        model: 'qwen2.5:1.5b',
+        model: 'deepseek-r1:1.5b',
         prompt: prompt
     })
 })
