@@ -9,6 +9,7 @@ async function adjustZoom() {
       const executeResult = await chrome.scripting.executeScript({
         target: { tabId: tabId },
         function: () => {
+          return document.body.querySelector('div > div').offsetWidth;
           return window.innerWidth;
         }
       });
@@ -34,11 +35,11 @@ async function adjustZoom() {
   
   // Run when a tab is activated / updated
   chrome.tabs.onActivated.addListener(adjustZoom);
-  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status === 'complete') {
-      adjustZoom();
-    }
-  });
+  // chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  //   if (changeInfo.status === 'complete') {
+  //     adjustZoom();
+  //   }
+  // });
 
   chrome.windows.onBoundsChanged.addListener(adjustZoom
   );
