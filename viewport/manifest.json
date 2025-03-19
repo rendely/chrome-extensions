@@ -1,0 +1,16 @@
+{
+  "name": "Fixed Viewport Width",
+  "version": "1.0",
+  "description": "Forces a specific viewport width on a tab using Chrome DevTools Protocol",
+  "manifest_version": 3,
+  "permissions": [
+    "debugger",
+    "activeTab"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
