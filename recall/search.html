@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Recall Search</title>
+    <link rel="stylesheet" href="search.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>Recall Search</h1>
+      <input id="query" type="search" placeholder="Search your saved pages..." autocomplete="off" />
+      <p id="status">Loading...</p>
+    </header>
+
+    <main class="layout">
+      <section class="results-pane">
+        <ul id="results"></ul>
+      </section>
+
+      <aside class="content-pane">
+        <div id="empty" class="empty-state">Select a result to view full text.</div>
+        <article id="detail" hidden>
+          <h2 id="detail-title"></h2>
+          <div class="detail-meta">
+            <span id="detail-url"></span>
+            <span id="detail-views"></span>
+            <button id="open-source" type="button">Open source page</button>
+          </div>
+          <pre id="detail-content"></pre>
+        </article>
+      </aside>
+    </main>
+
+    <script src="search.js"></script>
+  </body>
+</html>

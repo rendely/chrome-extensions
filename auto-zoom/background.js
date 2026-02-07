@@ -9,7 +9,7 @@ async function adjustZoom() {
       const executeResult = await chrome.scripting.executeScript({
         target: { tabId: tabId },
         function: () => {
-          return document.body.querySelector('div > div').offsetWidth;
+          // return document.body.querySelector('div > div').offsetWidth;
           return window.innerWidth;
         }
       });
@@ -24,7 +24,7 @@ async function adjustZoom() {
       console.log(innerWidth,currentZoom, targetZoom);
   
       // Apply zoom with some limits
-      targetZoom = Math.max(0.2, Math.min(targetZoom, 3.0)); // Limit zoom between 20% and 300%
+      targetZoom = Math.max(0.2, Math.min(targetZoom, 1.0)); // Limit zoom between 20% and 300%
   
       await chrome.tabs.setZoom(tabId, targetZoom);
   
@@ -35,11 +35,11 @@ async function adjustZoom() {
   
   // Run when a tab is activated / updated
   chrome.tabs.onActivated.addListener(adjustZoom);
-  // chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  //   if (changeInfo.status === 'complete') {
-  //     adjustZoom();
-  //   }
-  // });
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status === 'complete') {
+      adjustZoom();
+    }
+  });
 
   chrome.windows.onBoundsChanged.addListener(adjustZoom
   );
