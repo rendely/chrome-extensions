@@ -6,6 +6,9 @@ function renderDate() {
   document.getElementById('date-heading').textContent = formatted;
 }
 
+// Update date every minute
+setInterval(renderDate, 60000);
+
 // ── Storage helpers ───────────────────────────────────────────────────────────
 
 function genId() {
