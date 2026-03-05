@@ -37,6 +37,14 @@ function createTodoElement({ id, html = '', done = false }) {
   li.dataset.id = id;
   if (done) li.classList.add('done');
 
+  const handle = document.createElement('div');
+  handle.className = 'drag-handle';
+  handle.innerHTML = '⠿';
+  handle.title = 'Drag to reorder';
+  handle.addEventListener('mousedown', () => {
+    li.draggable = true;
+  });
+
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
   checkbox.className = 'todo-checkbox';
@@ -65,7 +73,49 @@ function createTodoElement({ id, html = '', done = false }) {
   text.addEventListener('input', handleTodoInput);
   text.addEventListener('mousedown', handleLinkClick);
 
-  li.append(checkbox, text, del);
+  li.addEventListener('dragstart', (e) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
+    li.classList.add('dragging');
+  });
+
+  li.addEventListener('dragend', () => {
+    li.draggable = false;
+    li.classList.remove('dragging');
+    document.querySelectorAll('#todo-list li').forEach(el => {
+      el.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+    saveTodos();
+  });
+
+  li.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const dragging = document.querySelector('.dragging');
+    if (!dragging || dragging === li) return;
+    const midY = li.getBoundingClientRect().top + li.offsetHeight / 2;
+    document.querySelectorAll('#todo-list li').forEach(el => {
+      el.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+    li.classList.add(e.clientY < midY ? 'drag-over-top' : 'drag-over-bottom');
+  });
+
+  li.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const dragging = document.querySelector('.dragging');
+    if (!dragging || dragging === li) return;
+    const midY = li.getBoundingClientRect().top + li.offsetHeight / 2;
+    const list = document.getElementById('todo-list');
+    if (e.clientY < midY) {
+      list.insertBefore(dragging, li);
+    } else {
+      list.insertBefore(dragging, li.nextSibling);
+    }
+    document.querySelectorAll('#todo-list li').forEach(el => {
+      el.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+  });
+
+  li.append(handle, checkbox, text, del);
   return li;
 }
 

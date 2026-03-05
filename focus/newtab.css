@@ -63,6 +63,39 @@ body {
   opacity: 1;
 }
 
+/* Drag handle */
+.drag-handle {
+  opacity: 0;
+  cursor: grab;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 0 2px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  user-select: none;
+  transition: opacity 0.15s;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+#todo-list li:hover .drag-handle {
+  opacity: 1;
+}
+
+#todo-list li.dragging {
+  opacity: 0.35;
+}
+
+#todo-list li.drag-over-top {
+  border-top: 2px solid var(--accent);
+}
+
+#todo-list li.drag-over-bottom {
+  border-bottom: 2px solid var(--accent);
+}
+
 /* Custom checkbox */
 .todo-checkbox {
   appearance: none;
