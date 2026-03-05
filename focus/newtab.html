@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus</title>
+  <link rel="stylesheet" href="newtab.css">
+</head>
+<body>
+  <div class="container">
+    <h1 id="date-heading"></h1>
+    <ul id="todo-list"></ul>
+    <button id="add-task-btn" class="add-task-btn">+ Add task</button>
+  </div>
+
+  <button id="settings-btn" class="settings-btn" title="Settings">&#9881;</button>
+
+  <div id="settings-panel" class="settings-panel hidden">
+    <h2>Blocked Sites</h2>
+    <p class="settings-hint">One domain per line (e.g. reddit.com)</p>
+    <textarea id="blocked-sites-input" placeholder="reddit.com&#10;twitter.com"></textarea>
+    <button id="settings-save-btn" class="save-btn">Save</button>
+  </div>
+
+  <div id="tab-picker" class="tab-picker hidden">
+    <ul id="tab-picker-list"></ul>
+  </div>
+
+  <script src="newtab.js"></script>
+</body>
+</html>

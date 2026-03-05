@@ -1,0 +1,290 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #f7f5f0;
+  --text: #2d2d2d;
+  --muted: #9e9689;
+  --accent: #8b7355;
+  --border: #ddd9d0;
+  --done-text: #b0aa9e;
+  --hover-bg: #efece6;
+  --panel-bg: #ffffff;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 80px 20px 40px;
+}
+
+.container {
+  width: 100%;
+  max-width: 520px;
+}
+
+#date-heading {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+  margin-bottom: 32px;
+}
+
+#todo-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#todo-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  position: relative;
+}
+
+#todo-list li:hover {
+  background: var(--hover-bg);
+}
+
+#todo-list li:hover .delete-btn {
+  opacity: 1;
+}
+
+/* Custom checkbox */
+.todo-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 3px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.todo-checkbox:hover {
+  border-color: var(--accent);
+}
+
+.todo-checkbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 8'%3E%3Cpath d='M1 4l3 3 5-6' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 10px 8px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.todo-text {
+  flex: 1;
+  font-size: 15px;
+  line-height: 1.5;
+  outline: none;
+  min-height: 22px;
+  word-break: break-word;
+}
+
+.todo-text:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+li.done .todo-text {
+  text-decoration: line-through;
+  color: var(--done-text);
+}
+
+.delete-btn {
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 16px;
+  padding: 0 2px;
+  line-height: 1;
+  margin-top: 2px;
+  transition: color 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.delete-btn:hover {
+  color: #c0392b;
+}
+
+/* Tab links */
+.tab-link {
+  display: inline-block;
+  background: #ede9e0;
+  color: var(--accent);
+  border-radius: 4px;
+  padding: 0 5px;
+  font-size: 0.9em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.tab-link:hover {
+  background: #e0dbd0;
+  text-decoration: underline;
+}
+
+/* Add task button */
+.add-task-btn {
+  margin-top: 12px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.add-task-btn:hover {
+  color: var(--accent);
+  background: var(--hover-bg);
+}
+
+/* Settings button */
+.settings-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+  padding: 6px;
+  border-radius: 50%;
+}
+
+.settings-btn:hover {
+  opacity: 1;
+}
+
+/* Settings panel */
+.settings-panel {
+  position: fixed;
+  bottom: 60px;
+  right: 20px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  width: 280px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+
+.settings-panel h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.settings-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.settings-panel textarea {
+  width: 100%;
+  height: 100px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+  resize: vertical;
+  outline: none;
+  margin-bottom: 10px;
+}
+
+.settings-panel textarea:focus {
+  border-color: var(--accent);
+}
+
+.save-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.save-btn:hover {
+  opacity: 0.85;
+}
+
+/* Tab picker dropdown */
+.tab-picker {
+  position: fixed;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  min-width: 260px;
+  max-width: 360px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 200;
+}
+
+.tab-picker ul {
+  list-style: none;
+  padding: 4px 0;
+}
+
+.tab-picker li {
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.1s;
+}
+
+.tab-picker li:hover,
+.tab-picker li.active {
+  background: var(--hover-bg);
+}
+
+.tab-picker li .tab-url {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.hidden {
+  display: none !important;
+}
