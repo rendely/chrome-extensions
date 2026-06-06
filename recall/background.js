@@ -113,7 +113,7 @@ async function upsertPage(payload) {
 }
 
 async function searchPages(query, limit = 20) {
-  const normalizedLimit = Math.max(1, Math.min(Number(limit) || 20, 100));
+  const normalizedLimit = Math.max(1, Math.min(Number(limit) || 20, 1000));
   const trimmed = (query || "").trim();
 
   if (!trimmed) {

@@ -98,7 +98,7 @@ async function refreshResults() {
   statusEl.textContent = "Searching...";
 
   try {
-    const response = await sendMessage({ type: "SEARCH", query, limit: 100 });
+    const response = await sendMessage({ type: "SEARCH", query, limit: 1000 });
     if (!response?.ok) {
       throw new Error(response?.error || "Search failed");
     }
