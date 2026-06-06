@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Meet Virtual Soundboard Microphone",
+  "version": "0.4.0",
+  "description": "Mix a real microphone with local sound clips and expose the mix to Google Meet.",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://meet.google.com/*"
+      ],
+      "js": [
+        "src/constraints.js",
+        "src/virtual-mic.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://meet.google.com/*"
+      ],
+      "js": [
+        "src/clip-loader.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "host_permissions": [
+    "https://meet.google.com/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "clips/*"
+      ],
+      "matches": [
+        "https://meet.google.com/*"
+      ]
+    }
+  ]
+}

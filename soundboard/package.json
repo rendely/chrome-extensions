@@ -1,0 +1,10 @@
+{
+  "name": "meet-virtual-soundboard-mic",
+  "version": "0.4.0",
+  "private": true,
+  "scripts": {
+    "sync-clips": "node scripts/generate-clip-index.js",
+    "test": "node --test",
+    "check": "node --check src/constraints.js && node --check src/virtual-mic.js && node --check src/clip-loader.js && node --check scripts/generate-clip-index.js && node scripts/validate-clip-index.js"
+  }
+}
