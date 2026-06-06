@@ -19,6 +19,9 @@ audio clips and exposes the mixed `MediaStreamTrack` to Google Meet.
 4. Select **Virtual Soundboard Mic** as the microphone.
 5. Use the clip buttons while in the call. The sliders control microphone and
    clip gain before the mix reaches Meet.
+6. Turn on **Stadium announcer** to lower the voice by one octave and apply
+   announcer EQ, arena-style reverb, and echo to the microphone. Soundboard
+   clips are not affected.
 
 Files selected from the panel are held in memory and must be loaded again after
 refreshing the page.

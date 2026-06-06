@@ -28,8 +28,14 @@
     context: null,
     destination: null,
     micGain: null,
+    micDryGain: null,
+    stadiumInputGain: null,
+    stadiumDirectGain: null,
+    stadiumReverbGain: null,
+    stadiumEchoGain: null,
     clipGain: null,
     compressor: null,
+    stadiumEnabled: false,
     micStream: null,
     micSource: null,
     lastPhysicalAudioConstraints: true,
@@ -50,6 +56,83 @@
     state.statusElement.dataset.error = String(isError);
   }
 
+  function createStadiumImpulse(context) {
+    const duration = 2.8;
+    const impulse = context.createBuffer(
+      2,
+      Math.ceil(context.sampleRate * duration),
+      context.sampleRate
+    );
+
+    for (let channel = 0; channel < impulse.numberOfChannels; channel += 1) {
+      const samples = impulse.getChannelData(channel);
+
+      for (let index = 0; index < samples.length; index += 1) {
+        const time = index / context.sampleRate;
+        const decay = Math.pow(1 - time / duration, 2.7);
+        samples[index] = (Math.random() * 2 - 1) * decay;
+      }
+    }
+
+    return impulse;
+  }
+
+  function createPitchShifter(context, semitones) {
+    const input = context.createGain();
+    const output = context.createGain();
+    const delays = [context.createDelay(1), context.createDelay(1)];
+    const gains = [context.createGain(), context.createGain()];
+    const pitchRatio = Math.pow(2, semitones / 12);
+    const grainDuration = 0.12;
+    const grainInterval = grainDuration / 2;
+    const minimumDelay = 0.01;
+    const delayChange = (1 - pitchRatio) * grainDuration;
+    let nextGrainTime = context.currentTime;
+    let grainIndex = 0;
+
+    delays.forEach((delay, index) => {
+      input.connect(delay);
+      delay.connect(gains[index]);
+      gains[index].connect(output);
+      gains[index].gain.value = 0;
+    });
+
+    function scheduleGrain(startTime) {
+      const index = grainIndex % delays.length;
+      const delay = delays[index].delayTime;
+      const gain = gains[index].gain;
+      const endTime = startTime + grainDuration;
+      const midpoint = startTime + grainDuration / 2;
+
+      delay.cancelScheduledValues(startTime);
+      delay.setValueAtTime(minimumDelay, startTime);
+      delay.linearRampToValueAtTime(minimumDelay + delayChange, endTime);
+
+      gain.cancelScheduledValues(startTime);
+      gain.setValueAtTime(0, startTime);
+      gain.linearRampToValueAtTime(1, midpoint);
+      gain.linearRampToValueAtTime(0, endTime);
+      grainIndex += 1;
+    }
+
+    function scheduleAhead() {
+      const scheduleUntil = context.currentTime + 0.25;
+
+      if (nextGrainTime < context.currentTime) {
+        nextGrainTime = context.currentTime;
+      }
+
+      while (nextGrainTime < scheduleUntil) {
+        scheduleGrain(nextGrainTime);
+        nextGrainTime += grainInterval;
+      }
+    }
+
+    scheduleAhead();
+    window.setInterval(scheduleAhead, 50);
+    return { input, output };
+  }
+
   function ensureAudioGraph() {
     if (state.context) {
       return state.context;
@@ -60,27 +143,99 @@
     const context = new AudioContextConstructor();
     const destination = context.createMediaStreamDestination();
     const micGain = context.createGain();
+    const micDryGain = context.createGain();
     const clipGain = context.createGain();
     const compressor = context.createDynamicsCompressor();
+    const stadiumInputGain = context.createGain();
+    const stadiumPitchShifter = createPitchShifter(context, -12);
+    const stadiumHighpass = context.createBiquadFilter();
+    const stadiumBass = context.createBiquadFilter();
+    const stadiumPresence = context.createBiquadFilter();
+    const stadiumDirectGain = context.createGain();
+    const stadiumConvolver = context.createConvolver();
+    const stadiumReverbGain = context.createGain();
+    const stadiumDelay = context.createDelay(1);
+    const stadiumFeedbackGain = context.createGain();
+    const stadiumEchoGain = context.createGain();
 
     micGain.gain.value = 1;
+    micDryGain.gain.value = 1;
     clipGain.gain.value = 1;
+    stadiumInputGain.gain.value = 0;
+    stadiumHighpass.type = "highpass";
+    stadiumHighpass.frequency.value = 85;
+    stadiumBass.type = "lowshelf";
+    stadiumBass.frequency.value = 180;
+    stadiumBass.gain.value = 4;
+    stadiumPresence.type = "peaking";
+    stadiumPresence.frequency.value = 2200;
+    stadiumPresence.Q.value = 0.8;
+    stadiumPresence.gain.value = 3;
+    stadiumDirectGain.gain.value = 0;
+    stadiumConvolver.buffer = createStadiumImpulse(context);
+    stadiumReverbGain.gain.value = 0;
+    stadiumDelay.delayTime.value = 0.24;
+    stadiumFeedbackGain.gain.value = 0.3;
+    stadiumEchoGain.gain.value = 0;
     compressor.threshold.value = -12;
     compressor.knee.value = 12;
     compressor.ratio.value = 4;
     compressor.attack.value = 0.003;
     compressor.release.value = 0.25;
 
-    micGain.connect(compressor);
+    micGain.connect(micDryGain);
+    micDryGain.connect(compressor);
+    micGain.connect(stadiumInputGain);
+    stadiumInputGain.connect(stadiumPitchShifter.input);
+    stadiumPitchShifter.output.connect(stadiumHighpass);
+    stadiumHighpass.connect(stadiumBass);
+    stadiumBass.connect(stadiumPresence);
+    stadiumPresence.connect(stadiumDirectGain);
+    stadiumDirectGain.connect(compressor);
+    stadiumPresence.connect(stadiumConvolver);
+    stadiumConvolver.connect(stadiumReverbGain);
+    stadiumReverbGain.connect(compressor);
+    stadiumPresence.connect(stadiumDelay);
+    stadiumDelay.connect(stadiumFeedbackGain);
+    stadiumFeedbackGain.connect(stadiumDelay);
+    stadiumDelay.connect(stadiumEchoGain);
+    stadiumEchoGain.connect(compressor);
     clipGain.connect(compressor);
     compressor.connect(destination);
 
     state.context = context;
     state.destination = destination;
     state.micGain = micGain;
+    state.micDryGain = micDryGain;
+    state.stadiumInputGain = stadiumInputGain;
+    state.stadiumDirectGain = stadiumDirectGain;
+    state.stadiumReverbGain = stadiumReverbGain;
+    state.stadiumEchoGain = stadiumEchoGain;
     state.clipGain = clipGain;
     state.compressor = compressor;
     return context;
+  }
+
+  function setStadiumEffect(enabled) {
+    const context = ensureAudioGraph();
+    const now = context.currentTime;
+    const transition = 0.04;
+    state.stadiumEnabled = enabled;
+
+    [
+      [state.micDryGain.gain, enabled ? 0 : 1],
+      [state.stadiumInputGain.gain, enabled ? 1 : 0],
+      [state.stadiumDirectGain.gain, enabled ? 1.15 : 0],
+      [state.stadiumReverbGain.gain, enabled ? 0.2 : 0],
+      [state.stadiumEchoGain.gain, enabled ? 0.14 : 0]
+    ].forEach(([parameter, value]) => {
+      parameter.cancelScheduledValues(now);
+      parameter.setValueAtTime(parameter.value, now);
+      parameter.linearRampToValueAtTime(value, now + transition);
+    });
+
+    context.resume();
+    setStatus(enabled ? "Stadium announcer effect on" : "Stadium announcer effect off");
   }
 
   async function ensureMicrophone() {
@@ -434,6 +589,28 @@
       .gains { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
       .gain { display: grid; grid-template-columns: 78px 1fr; align-items: center; margin: 7px 0; }
       .gain input { width: 100%; }
+      .effects {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 16px; margin: 10px 0 4px; padding: 10px 12px;
+        background: #f8fafd; border: 1px solid #dadce0; border-radius: 8px;
+      }
+      .effect-copy { display: grid; gap: 2px; }
+      .effect-copy strong { font: 600 13px Arial, sans-serif; }
+      .effect-copy span { color: #5f6368; font-size: 11px; }
+      .switch { position: relative; flex: 0 0 auto; width: 42px; height: 24px; }
+      .switch input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+      .switch-track {
+        position: absolute; inset: 0; border-radius: 999px;
+        background: #bdc1c6; cursor: pointer; transition: background 120ms ease;
+      }
+      .switch-track::after {
+        content: ""; position: absolute; top: 3px; left: 3px;
+        width: 18px; height: 18px; border-radius: 50%; background: #fff;
+        box-shadow: 0 1px 3px #0005; transition: transform 120ms ease;
+      }
+      .switch input:checked + .switch-track { background: #1a73e8; }
+      .switch input:checked + .switch-track::after { transform: translateX(18px); }
+      .switch input:focus-visible + .switch-track { outline: 2px solid #1a73e8; outline-offset: 2px; }
       .clips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
       .clip { position: relative; min-width: 0; }
       .clip-name {
@@ -530,6 +707,28 @@
       })
     );
 
+    const effects = document.createElement("div");
+    effects.className = "effects";
+    const effectCopy = document.createElement("div");
+    effectCopy.className = "effect-copy";
+    const effectTitle = document.createElement("strong");
+    effectTitle.textContent = "Stadium announcer";
+    const effectDescription = document.createElement("span");
+    effectDescription.textContent =
+      "Voice lowered one octave with arena reverb and echo";
+    effectCopy.append(effectTitle, effectDescription);
+    const effectSwitch = document.createElement("label");
+    effectSwitch.className = "switch";
+    const effectToggle = document.createElement("input");
+    effectToggle.type = "checkbox";
+    effectToggle.setAttribute("role", "switch");
+    effectToggle.setAttribute("aria-label", "Stadium announcer effect");
+    effectToggle.checked = state.stadiumEnabled;
+    const effectTrack = document.createElement("span");
+    effectTrack.className = "switch-track";
+    effectSwitch.append(effectToggle, effectTrack);
+    effects.append(effectCopy, effectSwitch);
+
     const clipList = document.createElement("div");
     clipList.className = "clips";
     state.clipListElement = clipList;
@@ -545,6 +744,9 @@
       fileInput.value = "";
     });
     stop.addEventListener("click", stopAllClips);
+    effectToggle.addEventListener("change", () => {
+      setStadiumEffect(effectToggle.checked);
+    });
     launcher.addEventListener("click", () => {
       panel.hidden = !panel.hidden;
     });
@@ -552,7 +754,7 @@
       panel.hidden = true;
     });
 
-    panel.append(header, status, controls, gains, clipList, hint);
+    panel.append(header, status, controls, gains, effects, clipList, hint);
     shadow.append(style, panel, launcher);
     document.documentElement.append(host);
     renderClipList();
